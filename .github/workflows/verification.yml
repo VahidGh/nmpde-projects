@@ -1,0 +1,50 @@
+name: Verification CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    container:
+      image: quay.io/pjbaioni/amsc_mk:2025
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Note container
+        run: |
+          echo "Using container image: quay.io/pjbaioni/amsc_mk:2025"
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Run tests
+        run: |
+          cd build
+          ctest --output-on-failure --parallel $(nproc)
+
+  model-validation:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    container:
+      image: quay.io/pjbaioni/amsc_mk:2025
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install validation deps
+        run: |
+          python3 -m pip install --upgrade pip || true
+          python3 -m pip install numpy meshio
+
+      - name: Run model validation
+        env:
+          BUILD_DIR: build
+        run: |
+          chmod +x scripts/run_model_validation.sh
+          scripts/run_model_validation.sh "$BUILD_DIR"

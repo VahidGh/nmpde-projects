@@ -1,0 +1,31 @@
+name: Scalability Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_executable:
+        description: 'Path to test executable (relative to repo root or build dir)'
+        required: false
+
+jobs:
+  scalability:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential cmake bc
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Run scalability harness
+        env:
+          TEST_EXEC: ${{ github.event.inputs.test_executable }}
+        run: |
+          chmod +x scripts/run_scalability.sh
+          scripts/run_scalability.sh build

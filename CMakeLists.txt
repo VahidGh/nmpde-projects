@@ -1,7 +1,13 @@
 cmake_minimum_required(VERSION 3.12.0)
-project(project_title LANGUAGES CXX C)
+project(lab06 LANGUAGES CXX C)
 
-include(../common/cmake-common.cmake)
+include(common/cmake-common.cmake)
 
-add_executable(lab-01 src/lab-01.cpp src/Poisson1D.cpp)
-deal_ii_setup_target(lab-01)
+add_executable(space-time-adaptivity src/space-time-adaptivity.cpp src/Heat.cpp)
+deal_ii_setup_target(space-time-adaptivity)
+
+# # Add a test that runs the executable. This test will be discoverable by CTest.
+# deal_ii_add_test(space-time-adaptivity)
+
+# # Add a test specifically for model validation, which can be run with `ctest -R model_validation`
+# add_test(NAME model_validation COMMAND space-time-adaptivity)

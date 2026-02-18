@@ -34,3 +34,5 @@
 *.app
 
 */build/*
+build/
+docs/Adaptive finite elements for a linear parabolic problem.pdf
