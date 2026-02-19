@@ -19,7 +19,7 @@ jobs:
           echo "Using container image: quay.io/pjbaioni/amsc_mk:2025"
 
       - name: Build and Test
-        shell: bash
+        shell: bash -l {0}
         run: |
           # Source environment and load modules, then build and test
           source /u/sw/etc/bash.bashrc
