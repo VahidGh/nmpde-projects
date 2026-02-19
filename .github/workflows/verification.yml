@@ -25,7 +25,7 @@ jobs:
           module load gcc-glibc dealii
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --parallel
-          ctest --output-on-failure --parallel \$(nproc)
+          ctest --output-on-failure --parallel $(( $(nproc) > 1 ? $(nproc) - 1 : 1 ))
 
   model-validation:
     needs: build-and-test
