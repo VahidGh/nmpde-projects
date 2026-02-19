@@ -19,13 +19,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Configure and Build
-        shell: bash -l {0}
         run: |
-          source /u/sw/etc/bash.bashrc
-          module load gcc-glibc dealii
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-          cmake --build build --parallel
-
+          bash -lc "
+            source /u/sw/etc/bash.bashrc &&
+            module load gcc-glibc dealii &&
+            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release &&
+            cmake --build build --parallel
+          "
       - name: Run scalability harness
         env:
           TEST_EXEC: ${{ github.event.inputs.test_executable }}

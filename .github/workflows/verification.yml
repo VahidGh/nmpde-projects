@@ -19,14 +19,14 @@ jobs:
           echo "Using container image: quay.io/pjbaioni/amsc_mk:2025"
 
       - name: Build and Test
-        shell: bash -l {0}
         run: |
-          # Source environment and load modules, then build and test
-          source /u/sw/etc/bash.bashrc
-          module load gcc-glibc dealii
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-          cmake --build build --parallel
-          ctest --output-on-failure --parallel $(nproc)
+          bash -lc "
+            source /u/sw/etc/bash.bashrc &&
+            module load gcc-glibc dealii &&
+            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release &&
+            cmake --build build --parallel &&
+            ctest --output-on-failure --parallel \$(nproc)
+          "
 
   model-validation:
     needs: build-and-test
@@ -40,12 +40,12 @@ jobs:
 
       - name: Install validation deps
         run: |
-          python3 -m pip install --upgrade pip || true
-          python3 -m pip install numpy meshio
-
+          python3 -m venv venv
+          . venv/bin/activate
+          pip install --upgrade pip
+          pip install numpy meshio
+          
       - name: Run model validation
-        env:
-          BUILD_DIR: build
         run: |
-          chmod +x scripts/run_model_validation.sh
-          scripts/run_model_validation.sh "$BUILD_DIR"
+          . venv/bin/activate
+          scripts/run_model_validation.sh build
