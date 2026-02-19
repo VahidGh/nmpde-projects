@@ -18,15 +18,13 @@ jobs:
         run: |
           echo "Using container image: quay.io/pjbaioni/amsc_mk:2025"
 
-      - name: Configure
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-
-      - name: Build
-        run: cmake --build build --parallel
-
-      - name: Run tests
+      - name: Build and Test
         run: |
-          cd build
+          # Source environment and load modules, then build and test
+          source /etc/profile.d/modules.sh
+          module load gcc-glibc dealii
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel
           ctest --output-on-failure --parallel $(nproc)
 
   model-validation:
