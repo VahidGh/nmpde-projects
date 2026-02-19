@@ -49,6 +49,9 @@ jobs:
           name: build-artifacts
           path: build/
 
+      - name: Restore executable permissions
+        run: chmod +x build/space-time-adaptivity
+
       - name: Run model validation
         run: |
           chmod +x scripts/run_model_validation.sh
