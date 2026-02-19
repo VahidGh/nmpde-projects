@@ -27,6 +27,12 @@ jobs:
           cmake --build build --parallel
           ctest --output-on-failure --parallel $(( $(nproc) > 1 ? $(nproc) - 1 : 1 ))
 
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: build/
+
   model-validation:
     needs: build-and-test
     runs-on: ubuntu-latest
@@ -37,15 +43,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install validation deps
-        run: |
-          python3 -m venv venv
-          . venv/bin/activate
-          pip install --upgrade pip
-          pip install numpy meshio
-          
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: build/
+
       - name: Run model validation
         run: |
-          . venv/bin/activate
           chmod +x scripts/run_model_validation.sh
           scripts/run_model_validation.sh build
