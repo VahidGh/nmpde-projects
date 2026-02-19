@@ -23,7 +23,7 @@ jobs:
         run: |
           source /u/sw/etc/profile.d/mk.sh
           module load gcc-glibc dealii
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DDEAL_II_ALLOW_TESTS=ON
           cmake --build build --parallel
           ctest --output-on-failure --parallel $(( $(nproc) > 1 ? $(nproc) - 1 : 1 ))
 
@@ -47,4 +47,5 @@ jobs:
       - name: Run model validation
         run: |
           . venv/bin/activate
+          chmod +x scripts/run_model_validation.sh
           scripts/run_model_validation.sh build
