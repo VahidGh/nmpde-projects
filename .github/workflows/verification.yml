@@ -53,6 +53,9 @@ jobs:
         run: chmod +x build/space-time-adaptivity
 
       - name: Run model validation
+        shell: bash
         run: |
+          source /u/sw/etc/profile.d/mk.sh
+          module load gcc-glibc dealii
           chmod +x scripts/run_model_validation.sh
           scripts/run_model_validation.sh build
