@@ -21,7 +21,7 @@ jobs:
       - name: Build and Test
         run: |
           # Source environment and load modules, then build and test
-          source /u/sw/etc/bash.bashrc
+          . /u/sw/etc/bash.bashrc
           module load gcc-glibc dealii
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --parallel
