@@ -19,14 +19,13 @@ jobs:
           echo "Using container image: quay.io/pjbaioni/amsc_mk:2025"
 
       - name: Build and Test
+        shell: bash
         run: |
-          bash -lc "
-            source /u/sw/etc/bash.bashrc &&
-            module load gcc-glibc dealii &&
-            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release &&
-            cmake --build build --parallel &&
-            ctest --output-on-failure --parallel \$(nproc)
-          "
+          source /u/sw/etc/profile.d/mk.sh
+          module load gcc-glibc dealii
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel
+          ctest --output-on-failure --parallel \$(nproc)
 
   model-validation:
     needs: build-and-test
