@@ -19,9 +19,10 @@ jobs:
           echo "Using container image: quay.io/pjbaioni/amsc_mk:2025"
 
       - name: Build and Test
+        shell: bash
         run: |
           # Source environment and load modules, then build and test
-          . /u/sw/etc/bash.bashrc
+          source /u/sw/etc/bash.bashrc
           module load gcc-glibc dealii
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --parallel
