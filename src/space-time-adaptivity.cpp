@@ -13,12 +13,10 @@ main(int argc, char *argv[])
     return 1.0; 
   };
 
-  
-
   Heat::g_function g_pulsation;
   Heat::h_function h_spatial;
 
-  // 3. Forzante (f)
+  // Forzante (f)
   const auto f = [&g_pulsation, &h_spatial](const Point<dim> &p, const double &t) {
   // Impostiamo il tempo corrente per la funzione g(t)
   g_pulsation.set_time(t);
@@ -26,8 +24,6 @@ main(int argc, char *argv[])
   // Il risultato è il prodotto g(t) * h(x) 
   return g_pulsation.value(p) * h_spatial.value(p);
   };
-
-  
 
   // Istanziazione del problema
   
