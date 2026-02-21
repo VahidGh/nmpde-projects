@@ -7,8 +7,8 @@ BUILD_DIR=${1:-build}
 RESULTS_FILE=${RESULTS_FILE:-model_results.csv}
 TEST_CMD=${TEST_CMD:-}
 PY_VALIDATOR=${PY_VALIDATOR:-scripts/validate_model.py}
-# TOL=${TOL:-1e-6}
-TOL=${TOL:-1e-1}
+TOL=${TOL:-1e-6}
+# TOL=${TOL:-1e-1}
 
 echo "Build dir: $BUILD_DIR"
 
@@ -41,10 +41,12 @@ else
 
   # Find PVTu or VTU output files created by DataOut
   # Prefer PVTu master file if present
-  # pvtu_files=($BUILD_DIR/output-*.pvtu)
-  # vtu_files=($BUILD_DIR/output-*.vtu)
-  pvtu_files=($BUILD_DIR/output-*_400.pvtu)
-  vtu_files=($BUILD_DIR/output-*_400_0.vtu)
+  pvtu_files=($BUILD_DIR/output-*.pvtu)
+  vtu_files=($BUILD_DIR/output-*.vtu)
+  # pvtu_files=($BUILD_DIR/output-*_400.pvtu)
+  # vtu_files=($BUILD_DIR/output-*_400_0.vtu)
+  # pvtu_files=($BUILD_DIR/output-*_1.pvtu)
+  # vtu_files=($BUILD_DIR/output-*_1_0.vtu)
 
   if [ -e "${pvtu_files[0]}" ]; then
     RESULTS_FILE="${pvtu_files[0]}"

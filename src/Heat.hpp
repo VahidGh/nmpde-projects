@@ -28,6 +28,10 @@
 #include <deal.II/numerics/matrix_tools.h>
 #include <deal.II/numerics/vector_tools.h>
 
+#include <deal.II/numerics/error_estimator.h>
+#include <deal.II/grid/grid_refinement.h>
+#include <deal.II/numerics/solution_transfer.h>
+
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -50,32 +54,67 @@ public:
     // Constructor.
     FunctionU0() = default;
 
-    // Evaluation of the function.
+    // Evaluation of the function. u( t = 0); p[0] = x, p[1] = y, p[2] = z.
     virtual double
     value(const Point<dim> &p,
           const unsigned int /*component*/ = 0) const override
     {
-      return p[0] * (1.0 - p[0]) * //
-             p[1] * (1.0 - p[1]) * //
-             p[2] * (1.0 - p[2]);
+      return 0;
+    }
+  };
+
+
+  class g_function : public Function<dim>
+  {
+  public:
+    g_function() : Function<dim>() {}
+
+    virtual double value(const Point<dim> & /*p*/, const unsigned int /*component*/ = 0) const override
+    {
+      const double t = this->get_time(); 
+      const double a = 5.0; // Parametro 'a' dal progetto 
+      const double N = 5.0; // Numero di impulsi 
+      
+      // g(t) = exp(-a * cos(2 * N * pi * t)) / exp(a) 
+      return std::exp(-a * std::cos(2.0 * N * numbers::PI * t)) / std::exp(a);
+    }
+  };
+
+  class h_function : public Function<dim>
+  {
+  public:
+    h_function() : Function<dim>() {}
+
+    virtual double value(const Point<dim> &p, const unsigned int /*component*/ = 0) const override
+    {
+      Point<dim> x0_point; 
+      x0_point[0] = 0.5; // x dove viene applicato l'impulso, cambiare per test
+      
+      const double sigma_val = 0.1; // 
+      // h(x) = exp(-(x-x0)^2 / sigma^2) 
+      return std::exp(-std::pow(p.distance(x0_point), 2) / std::pow(sigma_val, 2));
     }
   };
 
   // Constructor.
-  Heat(const std::string                               &mesh_file_name_,
-       const unsigned int                              &r_,
-       const double                                    &T_,
-       const double                                    &theta_,
-       const double                                    &delta_t_,
-       const std::function<double(const Point<dim> &)> &mu_,
-       const std::function<double(const Point<dim> &, const double &)> &f_)
+  Heat(const std::string                              &mesh_file_name_, 
+      const unsigned int                              &r_,
+      const double                                    &T_,
+      const double                                    &theta_,
+      const double                                    &delta_t_,
+      const std::function<double(const Point<dim> &)> &mu_,
+      const std::function<double(const Point<dim> &)> &sigma_,
+      const std::function<double(const Point<dim> &, const double &)> &f_,
+      const std::function<Tensor<1, dim>(const Point<dim> &)> &b_)
     : mesh_file_name(mesh_file_name_)
     , r(r_)
     , T(T_)
     , theta(theta_)
     , delta_t(delta_t_)
     , mu(mu_)
+    , sigma(sigma_)
     , f(f_)
+    , b(b_)
     , mpi_size(Utilities::MPI::n_mpi_processes(MPI_COMM_WORLD))
     , mpi_rank(Utilities::MPI::this_mpi_process(MPI_COMM_WORLD))
     , mesh(MPI_COMM_WORLD)
@@ -86,10 +125,18 @@ public:
   void
   run();
 
+  // Compute the error against a given exact solution.
+  double
+  compute_error(const VectorTools::NormType &norm_type,
+                const Function<dim>         &exact_solution) const;
+
 protected:
+  
+  /*
   // Initialization.
   void
   setup();
+  */
 
   // System assembly.
   void
@@ -98,6 +145,10 @@ protected:
   // System solution.
   void
   solve_linear_system();
+
+  void setup_system(); // Ex setup(), ora gestisce solo matrici/DoF
+  void init_mesh();    // Nuova funzione per leggere la mesh solo una volta
+  void refine_mesh();  // La funzione core per l'adattivitÃ 
 
   // Output.
   void
@@ -116,7 +167,13 @@ protected:
   const double theta;
 
   // Time step.
-  const double delta_t;
+  double delta_t;
+
+  
+  const double tol_time_max = 5e-3; // Soglia massima errore temporale
+  const double tol_time_min = 1e-4; // Soglia minima per aumentare delta_t
+  const double dt_min = 1e-5;       // Limite inferiore per delta_t
+  const double dt_max = 0.1;        // Limite superiore per delta_t
 
   // Current time.
   double time = 0.0;
@@ -127,8 +184,14 @@ protected:
   // Diffusion coefficient.
   std::function<double(const Point<dim> &)> mu;
 
+   // Reaction coefficient.
+  std::function<double(const Point<dim> &)> sigma;
+
   // Forcing term.
   std::function<double(const Point<dim> &, const double &)> f;
+
+  // Advection coefficient.
+  std::function<Tensor<1, dim>(const Point<dim> &)> b;
 
   // Number of MPI processes.
   const unsigned int mpi_size;
@@ -153,6 +216,9 @@ protected:
 
   // System right-hand side.
   TrilinosWrappers::MPI::Vector system_rhs;
+  
+  // Vettore per salvare la soluzione prima della rifinitura <-----
+  TrilinosWrappers::MPI::Vector solution_owned_old;
 
   // System solution, without ghost elements.
   TrilinosWrappers::MPI::Vector solution_owned;

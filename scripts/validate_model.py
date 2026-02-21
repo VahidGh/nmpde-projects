@@ -45,6 +45,7 @@ def compute_mean_from_vtu(path: Path):
     except Exception as e:
         raise RuntimeError('pyvista is required to read VTU files; please install it') from e
 
+    print("---------------In compute_mean_from_vtu-------------")
     # pyvista is more robust with string paths
     mesh = pv.read(str(path))
 
@@ -52,16 +53,29 @@ def compute_mean_from_vtu(path: Path):
     # Check for 'solution' in point data, then cell data.
     if 'solution' in mesh.point_data:
         return float(np.mean(mesh.point_data['solution']))
+        # solution = mesh.point_data['solution']
+        # # Create a boolean mask for values greater than 0
+        # positive_mask = solution > 0
+        # # Get the minimum value from the array where the mask is True
+        # min_positive_value = np.min(solution[positive_mask])
+        # return float(min_positive_value)
     if 'solution' in mesh.cell_data:
         return float(np.mean(mesh.cell_data['solution']))
+        # print("mesh.cell_data['solution']:", mesh.cell_data['solution'])
+        # return float(mesh.cell_data['solution'][-1])
+    
 
     # Fallback: try the first available data array if 'solution' is not found
     if mesh.point_data:
         key = list(mesh.point_data.keys())[0]
-        return float(np.mean(mesh.point_data[key]))
+        # return float(np.mean(mesh.point_data[key]))
+        print("mesh.point_data[key]:", mesh.point_data[key])
+        return float(mesh.point_data[key][0])
     if mesh.cell_data:
         key = list(mesh.cell_data.keys())[0]
-        return float(np.mean(mesh.cell_data[key]))
+        # return float(np.mean(mesh.cell_data[key]))
+        print("mesh.cell_data[key]:", mesh.cell_data[key])
+        return float(mesh.cell_data[key][0])
 
     raise ValueError('No suitable data arrays found in VTU/PVTu file')
 
@@ -69,8 +83,7 @@ def compute_mean_from_vtu(path: Path):
 def main():
     p = argparse.ArgumentParser()
     p.add_argument('--results', '-r', required=True, help='Results file (CSV or VTU/PVTu)')
-    # p.add_argument('--tolerance', '-t', type=float, default=1e-6)
-    p.add_argument('--tolerance', '-t', type=float, default=1e-1)
+    p.add_argument('--tolerance', '-t', type=float, default=1e-6)
     p.add_argument('--expected-mean', type=float, default=1.0 / 216.0,
                    help='Expected spatial mean (default is 1/216 for FunctionU0)')
     args = p.parse_args()
@@ -89,6 +102,7 @@ def main():
         mean = compute_mean_from_numeric(data)
 
     rel_err = abs(mean - args.expected_mean) / (abs(args.expected_mean) if args.expected_mean != 0 else 1.0)
+    # rel_err = mean
 
     print(f'Computed mean: {mean:.12g}')
     print(f'Expected mean: {args.expected_mean:.12g}')
