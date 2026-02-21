@@ -1,6 +1,6 @@
 #include "Heat.hpp"
 
-//  du/dt -div(mu * grad(u)) + div(b * u) + sigma * u = f
+//  du/dt -div(mu * grad(u)) = f
 int
 main(int argc, char *argv[])
 {
@@ -8,15 +8,12 @@ main(int argc, char *argv[])
 
   Utilities::MPI::MPI_InitFinalize mpi_init(argc, argv);
 
-  // 1. Coefficiente di Diffusione (mu)
+  // Coefficiente di Diffusione (mu)
   const auto mu = [](const Point<dim> & /*p*/) { 
     return 1.0; 
   };
 
-  // 2. Coefficiente di Reazione (sigma) 
-  const auto sigma = [](const Point<dim> & /*p*/) { 
-    return 0.0; 
-  };
+  
 
   Heat::g_function g_pulsation;
   Heat::h_function h_spatial;
@@ -30,13 +27,7 @@ main(int argc, char *argv[])
   return g_pulsation.value(p) * h_spatial.value(p);
   };
 
-  // 4. Campo di Velocità (b) 
-  const auto b = [](const Point<dim> & /*p*/) {
-    Tensor<1, dim> velocity;
-    for (unsigned int d = 0; d < dim; ++d)
-      velocity[d] = 0.0; 
-    return velocity;
-  };
+  
 
   // Istanziazione del problema
   
@@ -45,10 +36,8 @@ main(int argc, char *argv[])
                /* T = */ 1.0,
                /* theta = */ 1.0,    
                /* delta_t = */ 0.001,
-               mu,    
-               sigma, 
-               f,    
-               b);    
+               mu,
+               f);    
 
   problem.run();
 
