@@ -17,9 +17,6 @@ void Heat::init_mesh() {
   mesh.create_triangulation(construction_data);
 }
 
-
-
-
 void Heat::setup_system() {
 
   if (!fe) {
