@@ -111,7 +111,6 @@ public:
     , delta_t(delta_t_)
     , mu(mu_)
     , f(f_)
-    , b(b_)
     , mpi_size(Utilities::MPI::n_mpi_processes(MPI_COMM_WORLD))
     , mpi_rank(Utilities::MPI::this_mpi_process(MPI_COMM_WORLD))
     , mesh(MPI_COMM_WORLD)
@@ -161,7 +160,6 @@ protected:
   // Time step.
   double delta_t;
 
-  
   const double tol_time_max = 5e-3; // Soglia massima errore temporale
   const double tol_time_min = 1e-4; // Soglia minima per aumentare delta_t
   const double dt_min = 1e-5;       // Limite inferiore per delta_t
