@@ -160,6 +160,7 @@ protected:
   // Time step.
   double delta_t;
 
+  
   const double tol_time_max = 5e-3; // Soglia massima errore temporale
   const double tol_time_min = 1e-4; // Soglia minima per aumentare delta_t
   const double dt_min = 1e-5;       // Limite inferiore per delta_t
