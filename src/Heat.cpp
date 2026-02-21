@@ -1,4 +1,4 @@
-#include "Parab_multi.hpp"
+#include "Heat.hpp"
 
 void Heat::init_mesh() {
   pcout << "Initializing the mesh from file" << std::endl;
