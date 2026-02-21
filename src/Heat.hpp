@@ -48,8 +48,6 @@ public:
   static constexpr unsigned int dim = 3;
 
   
-  
-  
   // Initial condition.
   class FunctionU0 : public Function<dim>
   {
@@ -65,7 +63,6 @@ public:
       return 0;
     }
   };
-
 
   class g_function : public Function<dim>
   {
@@ -99,13 +96,6 @@ public:
     }
   };
 
-
-
-  
-  
-  
-  
-  
   // Constructor.
   Heat(const std::string                              &mesh_file_name_, 
       const unsigned int                              &r_,
@@ -128,9 +118,6 @@ public:
     , pcout(std::cout, mpi_rank == 0)
   {}
 
-  
-  
-  
   // Run the time-dependent simulation.
   void
   run();
