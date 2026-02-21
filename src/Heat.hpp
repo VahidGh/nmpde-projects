@@ -1,5 +1,5 @@
-#ifndef PRAB_MULTI_HPP
-#define PARAB_MULTI_HPP
+#ifndef HEAT_HPP
+#define HEAT_HPP
 
 #include <deal.II/base/conditional_ostream.h>
 #include <deal.II/base/quadrature_lib.h>
