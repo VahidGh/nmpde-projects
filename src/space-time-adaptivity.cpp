@@ -1,4 +1,4 @@
-#include "Parab_multi.hpp"
+#include "Heat.hpp"
 
 //  du/dt -div(mu * grad(u)) + div(b * u) + sigma * u = f
 int
