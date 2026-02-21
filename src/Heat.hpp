@@ -113,16 +113,13 @@ public:
       const double                                    &theta_,
       const double                                    &delta_t_,
       const std::function<double(const Point<dim> &)> &mu_,
-      const std::function<double(const Point<dim> &)> &sigma_,
-      const std::function<double(const Point<dim> &, const double &)> &f_,
-      const std::function<Tensor<1, dim>(const Point<dim> &)> &b_)
+      const std::function<double(const Point<dim> &, const double &)> &f_)
     : mesh_file_name(mesh_file_name_)
     , r(r_)
     , T(T_)
     , theta(theta_)
     , delta_t(delta_t_)
     , mu(mu_)
-    , sigma(sigma_)
     , f(f_)
     , b(b_)
     , mpi_size(Utilities::MPI::n_mpi_processes(MPI_COMM_WORLD))
@@ -192,14 +189,8 @@ protected:
   // Diffusion coefficient.
   std::function<double(const Point<dim> &)> mu;
 
-   // Reaction coefficient.
-  std::function<double(const Point<dim> &)> sigma;
-
   // Forcing term.
   std::function<double(const Point<dim> &, const double &)> f;
-
-  // Advection coefficient.
-  std::function<Tensor<1, dim>(const Point<dim> &)> b;
 
   // Number of MPI processes.
   const unsigned int mpi_size;
