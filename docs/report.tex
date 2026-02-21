@@ -1,0 +1,518 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+  11pt,
+]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\newenvironment{Shaded}{}{}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{#1}}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.49,0.56,0.16}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.53,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.56,0.13,0.00}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.73,0.13,0.13}{\textit{#1}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.02,0.16,0.49}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.40,0.40,0.40}{#1}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.74,0.48,0.00}{#1}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.73,0.40,0.53}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.10,0.09,0.49}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{amsmath, amssymb, amsthm, physics, mathtools}
+\usepackage[utf8]{inputenc}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{parskip}
+\raggedbottom
+\setlength{\parskip}{0.8em}
+\setlength{\parindent}{0em}
+\linespread{1.1}
+\usepackage{titlesec}
+\titleformat{\chapter}{\normalfont\huge\bfseries}{\thechapter}{1em}{}
+\titleformat{\section}{\normalfont\Large\bfseries}{\thesection}{1em}{}
+\usepackage{tikz, pgfplots}
+\pgfplotsset{compat=newest}
+\usepackage{listings}
+\lstset{basicstyle=\ttfamily\small, breaklines=true, frame=single, language=C++, keywordstyle=\color{blue}, commentstyle=\color{green!60!black}}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=blue, urlcolor=blue}
+
+\author{}
+\date{}
+
+\begin{document}
+
+\begin{center}
+    \LARGE\bfseries Adaptive Finite Elements for a Linear Parabolic Problem
+\end{center}
+\vspace{2em}
+
+\section{1. Introduction}
+
+Partial Differential Equations (PDEs) are fundamental mathematical
+models for phenomena across various scientific and engineering
+disciplines. While analytical solutions are often intractable for
+complex problems, numerical methods, particularly the Finite Element
+Method (FEM), offer robust approximation strategies. For time-dependent
+problems, such as the heat equation, the computational domain spans both
+space and time, presenting challenges in achieving accuracy and
+efficiency with uniform discretizations.
+
+Adaptive methods represent a significant advancement in numerical
+simulation, allowing for dynamic adjustment of spatial and temporal
+resolutions based on estimates of the solution error. This targeted
+refinement concentrates computational resources where they are most
+needed, for example, near sharp fronts, singularities, or regions of
+high solution gradients, leading to more accurate results with optimized
+computational cost compared to global uniform meshes \cite{picasso1998}.
+
+This theoretical study focuses on the linear parabolic problem,
+specifically the heat equation, with an emphasis on its strong and weak
+formulations, mathematical analysis, numerical discretization via FEM
+coupled with time-stepping schemes, and the theoretical underpinnings of
+error estimation crucial for adaptive algorithms. The goal is to lay the
+groundwork for developing an adaptive formulation that dynamically refines
+the space-time grid based on error indicators, a strategy extensively
+discussed in the context of a posteriori error estimates for parabolic
+problems \cite{picasso1998}.
+
+\section{2. Mathematical Formulation}
+
+We consider a linear parabolic problem, often referred to as the heat
+equation, defined on a spatial domain $\Omega \subset \mathbb{R}^d$
+(typically $d=2$ or $d=3$) over a time interval $(0, T)$. The
+problem describes the evolution of an unknown function $u(x, t)$ that
+depends on both spatial coordinates $x$ and time $t$.
+
+\subsection{Strong Formulation}
+
+The strong form of the governing equation is given by:
+
+\[
+\frac{\partial u}{\partial t} - \nabla \cdot (\mu \nabla u) = f \quad \text{in } \Omega \times (0, T) \quad (P.1)
+\]
+
+The spatial domain $\Omega$ is assumed to be a convex polygon of
+$\mathbb{R}^2$ \cite{picasso1998}. The problem is complemented by the following
+auxiliary conditions:
+
+\begin{itemize}
+\item
+  \textbf{Boundary Conditions (BCs):} Homogeneous Neumann conditions are
+  applied over the entire spatial boundary $\partial \Omega$ for all
+  $t \in (0, T)$: \[
+  \mu \nabla u \cdot n = 0 \quad \text{on } \partial\Omega \times (0, T) \quad (P.2)
+  \] Here, $n$ is the outward unit normal vector to
+  $\partial\Omega$. This condition implies no heat flux across the
+  boundary.
+\item
+  \textbf{Initial Condition (IC):} The initial state of the system is
+  prescribed as zero throughout the domain $\Omega$ at $t=0$: \[
+  u(x, 0) = 0 \quad \text{in } \Omega \times \{0\} \quad (P.3)
+  \]
+\end{itemize}
+
+The parameters and forcing term are defined as follows:
+
+\begin{itemize}
+\tightlist
+\item
+  $\mu$: Diffusion coefficient, which is constant and set to
+  $\mu = 1$.
+\item
+  $f(x, t)$: Forcing term, representing a sequence of impulses
+  localized in space and time. It is defined as a separable function of
+  space and time: \[
+  f(x, t) = g(t)h(x)
+  \] where \[
+  g(t) = \frac{\exp(-a \cos(2 N \pi t))}{\exp(a)}
+  \] and \[
+  h(x) = \exp\left(-\frac{(x - x_0)^2}{\sigma^2}\right)
+  \] with $a > 0$, $N \in \mathbb{N}$, $x_0 \in \Omega$, and
+  $\sigma > 0$.
+\end{itemize}
+
+The overall computational domain is the space-time cylinder
+$Q_T = \Omega \times (0, T]$.
+
+\subsection{Weak Formulation}
+
+To enable numerical solution, especially for solutions that may not
+possess the high regularity required for the strong form, we derive the
+weak (variational) formulation of the problem. This involves multiplying
+the PDE by a spatially-dependent test function and integrating over the
+spatial domain.
+
+Let $V$ be a suitable functional space for the solution $u$ and test
+functions $v$. We seek $u(t, \cdot) \in V$ such that for all
+$v \in V$, the integral form of the PDE is satisfied. The space $V$
+will typically be a Sobolev space, as discussed below.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  \textbf{Multiply by a Test Function and Integrate:} Multiply equation
+  (P.1) by a test function $v(x) \in V$ and integrate over $\Omega$:
+  \[
+  \int_{\Omega} \left( \frac{\partial u}{\partial t} - \nabla \cdot (\mu \nabla u) \right) v \, dx = \int_{\Omega} f v \, dx \quad \forall v \in V, \text{ a.e. } t \in (0, T)
+  \] This can be split into two terms: \[
+  \int_{\Omega} \frac{\partial u}{\partial t} v \, dx - \int_{\Omega} \nabla \cdot (\mu \nabla u) v \, dx = \int_{\Omega} f v \, dx
+  \]
+\item
+  \textbf{Apply Green's First Identity (Integration by Parts):} The
+  second term on the left-hand side involves a divergence. We apply
+  Green's First Identity (also known as the Divergence Theorem) to this
+  term: \[
+  - \int_{\Omega} \nabla \cdot (\mu \nabla u) v \, dx = \int_{\Omega} \mu \nabla u \cdot \nabla v \, dx - \int_{\partial \Omega} (\mu \nabla u \cdot n) v \, ds
+  \]
+\item
+  \textbf{Incorporate Boundary Conditions:} The boundary integral term
+  is simplified by the given homogeneous Neumann boundary condition
+  (P.2): \[
+  \int_{\partial \Omega} (\mu \nabla u \cdot n) v \, ds = \int_{\partial \Omega} (0) v \, ds = 0
+  \] Thus, the boundary integral vanishes. This implies that the Neumann
+  boundary conditions are ``natural'' boundary conditions in the
+  variational formulation, as they are implicitly satisfied without
+  further restrictions on the test function space.
+\item
+  \textbf{The Weak Formulation:} Combining these steps, the
+  time-continuous weak formulation of the problem is: Find
+  $u: (0, T) \to V$ such that $u(x,0)=0$ and for all $v \in V$: \[
+  \int_{\Omega} \frac{\partial u}{\partial t} v \, dx + \int_{\Omega} \mu \nabla u \cdot \nabla v \, dx = \int_{\Omega} f v \, dx \quad \forall v \in V, \text{ a.e. } t \in (0, T) \quad (W.1)
+  \]
+\item
+  \textbf{Functional Spaces:} For the terms in (W.1) to be well-defined,
+  $u$ and $v$ must have square-integrable first spatial derivatives.
+  The standard choice for such problems is the Sobolev space
+  $H^1(\Omega)$. Since there are no Dirichlet boundary conditions
+  constraining the test function values to zero on the boundary, the
+  test space $V$ is simply $H^1(\Omega)$.
+
+  More precisely, the solution $u$ is sought in the space
+  $W = \{w \in L^2(0,T;H^1(\Omega)) \text{ and } \partial w/\partial t\in L^2(0,T;H^{-1}(\Omega))\}$
+  \cite{picasso1998}. The initial condition $u(\cdot,0)=u^0$ is understood in
+  the $L^2(\Omega)$ sense if
+  $u \in \mathcal{C}^0([0,T];L^2(\Omega))$, which is a property of
+  functions in $W$ \cite{picasso1998}.
+
+  We can express (W.1) using the mass matrix-like and stiffness
+  matrix-like terms: \[
+  \left( \frac{\partial u}{\partial t}, v \right)_{L^2(\Omega)} + A(u, v) = (f, v)_{L^2(\Omega)} \quad \forall v \in V, \text{ a.e. } t \in (0, T)
+  \] where $A(u, v) = \int_{\Omega} \mu \nabla u \cdot \nabla v \, dx$
+  is the bilinear form and
+  $(f, v)_{L^2(\Omega)} = \int_{\Omega} f v \, dx$ is the linear
+  functional.
+\end{enumerate}
+
+\subsection{Mathematical Analysis}
+
+The mathematical analysis for parabolic problems involves establishing
+the existence, uniqueness, and stability of the weak solution. These
+properties are critical to guarantee that the problem is well-posed and
+that numerical approximations are meaningful. The analysis often draws
+on functional analysis tools, such as the Lax-Milgram Lemma for the
+spatial elliptic operator, extended to the time-dependent setting via
+energy methods.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  \textbf{Continuity of the Bilinear Form $A(u,v)$:} The bilinear form
+  $A(u,v) = \int_{\Omega} \mu \nabla u \cdot \nabla v \, dx$ must be
+  continuous (bounded) on $V \times V$. For $V = H^1(\Omega)$, using
+  the Cauchy-Schwarz inequality and assuming $\mu$ is bounded (here
+  $\mu=1$): \[
+  |A(u, v)| = \left| \int_{\Omega} \mu \nabla u \cdot \nabla v \, dx \right| \le \mu_{\max} \int_{\Omega} |\nabla u| |\nabla v| \, dx \le \mu_{\max} \|\nabla u\|_{L^2(\Omega)} \|\nabla v\|_{L^2(\Omega)}
+  \] Since $\|\nabla u\|_{L^2(\Omega)} \le \|u\|_{H^1(\Omega)}$ (where
+  $\|u\|_{H^1(\Omega)}^2 = \|u\|_{L^2(\Omega)}^2 + \|\nabla u\|_{L^2(\Omega)}^2$),
+  we have: \[
+  |A(u, v)| \le \mu_{\max} \|u\|_{H^1(\Omega)} \|v\|_{H^1(\Omega)}
+  \] This proves continuity with $M = \mu_{\max}$ (here $M=1$).
+\item
+  \textbf{Coercivity of the Bilinear Form $A(v,v)$:} The bilinear form
+  $A(v,v)$ must be coercive. For the pure diffusion term
+  $A(v, v) = \int_{\Omega} \mu |\nabla v|^2 \, dx$, with homogeneous
+  Neumann boundary conditions on the entire boundary, $A(v,v)$ only
+  involves the gradient term. This means $A(v,v) = 0$ for any constant
+  function $v \ne 0$. Therefore, $A(v,v)$ is not coercive with
+  respect to the full $H^1(\Omega)$ norm directly.
+
+  However, for parabolic problems, a weaker coercivity condition is
+  often sufficient, usually called \textbf{weak coercivity}. This states
+  that there exists a constant $\lambda \ge 0$ such that
+  $A(V, V) + \lambda \|V\|_{L^2(\Omega)}^2 \ge \alpha \|V\|_V^2$ for
+  some $\alpha > 0$. This modified form effectively makes the bilinear form coercive
+  on $H^1(\Omega)$. The non-trivial $L^2$ term (the time derivative)
+  in the parabolic equation helps establish well-posedness even when the
+  spatial operator is only weakly coercive.
+\item
+  \textbf{Boundedness of the Linear Functional $F(v)$:} The linear
+  functional $F(v) = \int_{\Omega} f v \, dx$ must be bounded
+  (continuous) on $V$. Using the Cauchy-Schwarz inequality: \[
+  |F(v)| = \left| \int_{\Omega} f v \, dx \right| \le \|f\|_{L^2(\Omega)} \|v\|_{L^2(\Omega)}
+  \] Since $\|v\|_{L^2(\Omega)} \le \|v\|_{H^1(\Omega)}$, we have: \[
+  |F(v)| \le \|f\|_{L^2(\Omega)} \|v\|_{H^1(\Omega)}
+  \] This proves boundedness with $C_F = \|f\|_{L^2(\Omega)}$.
+\item
+  \textbf{Existence, Uniqueness, and Stability:} For the parabolic heat
+  equation with an $L^2$ initial condition and $L^2$ forcing, it is
+  a standard result that a unique weak solution exists in the space
+  $W = \{w\in L^2(0,T;H^1(\Omega)) \text{ and } \partial w/\partial t\in L^2(0,T;H^{-1}(\Omega))\}$
+  \cite{picasso1998}. Moreover, the solution $u(\cdot,t)$ belongs to
+  $\mathcal{C}^0([0,T];L^2(\Omega))$ \cite{picasso1998}.
+
+  The stability of the solution is demonstrated through energy
+  estimates. For the semi-discrete problem, the solution norm is bounded
+  by the data. If $F=0$, the $L^2$ norm of the solution at time
+  $t$ is bounded by its initial condition, and the time-integrated
+  $H^1$ semi-norm is also bounded: \[
+  \|U_h(t)\|_{L^2(\Omega)}^2 + \alpha \int_0^t \|\nabla U_h(\tau)\|_{L^2(\Omega)}^2 d\tau \le \|U_0^h\|_{L^2(\Omega)}^2
+  \] This implies that the solution is stable and does not grow
+  unboundedly.
+\end{enumerate}
+
+\section{3. Numerical Discretization}
+
+The weak formulation (W.1) still represents a continuous problem in both
+space and time. To obtain a computable solution, both spatial and
+temporal dimensions must be discretized.
+
+\subsection{Spatial Semi-Discretization: Finite Element Method (FEM)}
+
+We discretize the spatial domain $\Omega$ using FEM.
+\begin{enumerate}
+\item \textbf{Finite Element Space:} We introduce a finite-dimensional subspace
+$V_h \subset V$ spanned by a basis of continuous, piecewise polynomial
+functions $\{\phi_j(x)\}_{j=1}^{N_h}$. We employ continuous, piecewise linear triangular finite elements
+($P_1$ elements) \cite{picasso1998}.
+\item \textbf{Approximate Solution:}
+The solution $u(x,t)$ is approximated by $u_h(x,t)$ in $V_h$: \[
+    u_h(x, t) = \sum_{j=1}^{N_h} U_j(t) \phi_j(x)
+    \] where $U_j(t)$ are time-dependent coefficients.
+\item \textbf{Galerkin Procedure:} Substituting $u_h$ into (W.1) and
+choosing test functions $v = \phi_i(x)$ for each $i=1, \dots, N_h$,
+we obtain a system of Ordinary Differential Equations (ODEs) in time,
+known as the semi-discrete system: \[
+    \sum_{j=1}^{N_h} \frac{d U_j}{d t} \int_{\Omega} \phi_j \phi_i \, dx + \sum_{j=1}^{N_h} U_j(t) \int_{\Omega} \mu \nabla \phi_j \cdot \nabla \phi_i \, dx = \int_{\Omega} f \phi_i \, dx
+    \] This system is expressed in matrix form: \[
+    M \frac{d\mathbf{U}}{dt} + A \mathbf{U}(t) = \mathbf{F}(t) \quad (SD.1)
+    \] where $\mathbf{U}(t) = [U_1(t), \dots, U_{N_h}(t)]^T$ is the
+vector of nodal unknowns, and:
+\begin{itemize}
+\item \textbf{Mass Matrix $M$}: $M_{ij} = \int_{\Omega} \phi_j \phi_i \, dx$.
+\item \textbf{Stiffness Matrix $A$}: $A_{ij} = \int_{\Omega} \mu \nabla \phi_j \cdot \nabla \phi_i \, dx$.
+\item \textbf{Load Vector $\mathbf{F}(t)$}: $F_i(t) = \int_{\Omega} f(x,t) \phi_i \, dx$.
+\end{itemize}
+\end{enumerate}
+
+The initial condition for the ODE system is
+$\mathbf{U}(0)=\mathbf{0}$, obtained by interpolating $u(x,0)=0$.
+
+\subsection{Temporal Discretization: Theta Method}
+
+To solve the semi-discrete system (SD.1), we discretize the time
+variable. We introduce a partition of $(0,T)$ into subintervals
+$(t^n-t^{n-1})$ and define time levels
+$0=t_0 < t_1 < \dots < t_N=T$. Let $\Delta t_n = t_n - t_{n-1}$ be
+the time step. We seek an approximation
+$\mathbf{U}^n \approx \mathbf{U}(t^n)$.
+
+The \textbf{Theta-method} is a one-step finite difference scheme that
+approximates the time derivative and weights the spatial terms between
+$t^n$ and $t^{n+1}$. The scheme for advancing from $\mathbf{U}^n$ to
+$\mathbf{U}^{n+1}$ is: \[
+M \left( \frac{\mathbf{U}^{n+1} - \mathbf{U}^n}{\Delta t} \right) + A \left[ \theta \mathbf{U}^{n+1} + (1-\theta) \mathbf{U}^n \right] = \theta \mathbf{F}^{n+1} + (1-\theta) \mathbf{F}^n \quad (FD.1)
+\] where $\mathbf{F}^{n+1} = \mathbf{F}(t^{n+1})$ and
+$\mathbf{F}^n = \mathbf{F}(t^n)$.
+
+Rearranging to solve for $\mathbf{U}^{n+1}$ at each time step, we get
+a linear algebraic system: \[
+\mathbf{K} \mathbf{U}^{n+1} = \mathbf{R}^n
+\] where \[
+\mathbf{K} = \frac{1}{\Delta t} M + \theta A \quad (FD.2)
+\] and \[
+\mathbf{R}^n = \left( \frac{1}{\Delta t} M - (1-\theta)A \right) \mathbf{U}^n + \theta \mathbf{F}^{n+1} + (1-\theta)\mathbf{F}^n \quad (FD.3)
+\]
+
+Following \cite{picasso1998}, we utilize the \textbf{Euler implicit (Backward Euler) scheme} for time
+discretization. This corresponds to choosing $\theta = 1$.
+
+For $\theta=1$:
+\begin{itemize}
+\item The scheme is first-order accurate in time ($O(\Delta t)$).
+\item It is unconditionally stable, meaning it remains bounded for any choice of $\Delta t > 0$.
+\end{itemize}
+
+The fully discrete scheme for Backward Euler is: \[
+\left( \frac{1}{\Delta t} M + A \right) \mathbf{U}^{n+1} = \frac{1}{\Delta t} M \mathbf{U}^n + \mathbf{F}^{n+1} \quad (FD.4)
+\] At each time step, a linear system with matrix
+$K = \frac{1}{\Delta t} M + A$ is solved for $\mathbf{U}^{n+1}$.
+Since $M$ and $A$ are constant (as $\mu$ is constant), $K$ only
+needs to be assembled and factorized once if $\Delta t$ is fixed,
+significantly reducing computational cost.
+
+\subsection{Theoretical Error Estimates}
+
+The accuracy of the fully discrete solution $u_{h\tau}(x,t)$ (where
+$h$ denotes spatial discretization and $\tau$ denotes temporal
+discretization) is determined by both the spatial and temporal errors.
+
+For a linear parabolic problem solved with FEM of polynomial degree
+$r$ in space and a $\theta$-method of order $Q(\theta)$ in time,
+the error is typically bounded by: \[
+\|u(t_n) - u_{h\tau}(t_n)\|_{norm} \le C \left( H^r + (\Delta t)^{Q(\theta)} \right) \quad (\text{Error.1})
+\] where $H$ is the mesh size, and $C$ is a constant dependent on
+the exact solution's regularity but independent of $H$ and
+$\Delta t$.
+
+Given the proposed scheme (piecewise linear FEM, i.e., $r=1$, and
+Backward Euler, i.e., $Q(\theta)=1$ for $\theta \neq 1/2$), the
+theoretical error estimate for the exact solution $u$ and the
+numerical approximation $u_{h\tau}$ would be: \[
+\|u - u_{h\tau}\|_{norm} \le C (H + \Delta t)
+\] This indicates first-order convergence in both space and time.
+
+Detailed a posteriori error estimates for the error $e = u - u_{h\tau}$ in the $L^2$ in time, $H^1$ in space norm are established in \cite{picasso1998}. The error estimator is comprised of three main contributions: $\eta$, $\epsilon$, and $\gamma$ \cite{picasso1998}.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  \textbf{Spatial Residual Error ($\eta^n$):} This term measures the
+  residual of the PDE equation in each element $K$ and jump of the
+  normal derivative across edges $l$: \[
+  (\eta_{K}^{n})^{2}=\int_{t^{n-1}}^{t^{n}}\{|K|\|\Pi_{K}^{n}(f-\frac{\partial u_{h\tau}}{\partial t})\|_{0,K}^{2}+\frac{1}{2}\sum_{l\in E_{K}^{n}}|l|\|\Pi_{l}^{n}(J_{l}^{n})\|_{0,l}^{2}\}dt \quad (\text{Error.2})
+  \] This is similar to error estimators for elliptic problems,
+  capturing the spatial discretization error, particularly due to the
+  piecewise linear approximation and local non-satisfaction of the PDE
+  \cite{picasso1998}.
+\item
+  \textbf{Temporal Error from Solution Difference ($\epsilon^n$):}
+  This term estimates the error introduced by the time discretization
+  scheme based on the difference between solutions at consecutive time
+  steps: \[
+  (\epsilon_{K}^{n})^{2}=\int_{t^{n-1}}^{t^{n}}\|\nabla(u_{h}^{n}-u_{h}^{n-1})\|_{0,K}^{2}dt \quad (\text{Error.3})
+  \] This component measures the effect of large solution changes
+  between time levels \cite{picasso1998}.
+\item
+  \textbf{Temporal Error from Forcing Term Approximation
+  ($\gamma^n$):} This term quantifies the error due to approximating
+  the time-dependent forcing function $f$ with its value at $t^n$
+  (or some average): \[
+  (\gamma_{K}^{n})^{2}=\int_{t^{n-1}}^{t^{n}}\|f-f^{n}\|_{0,K}^{2}dt \quad (\text{Error.4})
+  \] Here $f^n=f(\cdot,t^n)$ \cite{picasso1998}. This captures the error from
+  not accurately resolving the time-dependence of the source term.
+\end{enumerate}
+
+The total error estimators $\eta, \epsilon, \gamma$ are summed over all
+elements and time steps \cite{picasso1998}.
+
+\textbf{Upper and Lower Bounds:} Theoretical bounds on the error $e=u-u_{h\tau}$ are provided in \cite{picasso1998}. 
+\begin{itemize}
+\item
+    \textbf{Upper Bound (Theorem 2.1):} Under certain assumptions (regular
+    meshes, nested triangulations, $f \in H^1((0,T)\times\Omega)$), for
+    $h$ small enough, the error is bounded above: \[
+    \|e(\cdot,t^{n})\|_{0,\Omega}^{2}+\int_{t^{n-1}}^{t^{n}}\|\nabla e\|_{0,\Omega}^{2}dt\le\|e(\cdot,t^{n-1})\|_{0,\Omega}^{2}+C((\eta^{n})^{2}+(\epsilon^{n})^{2}+(\gamma^{n})^{2}+h^{4}|f|_{1,(t^{n-1},t^{n})\times\Omega}^{2}) \quad (\text{Error.5})
+    \] Summing over time steps, the global error follows
+    $\int_{0}^{T}\|\nabla e\|_{0,\Omega}^{2}dt\le C(\eta^{2}+\epsilon^{2}+\gamma^{2})$
+    \cite{picasso1998}. 
+\item \textbf{Lower Bound (Theorem 2.2):} Conversely, the
+    error estimator itself is bounded by the true error, confirming its
+    reliability: \[
+    (\eta^{n})^{2}\le C(\int_{t^{n-1}}^{t^{n}}\|\nabla e\|_{0,\Omega}^{2}dt+(\epsilon^{n})^{2}+h^{4}|f|_{1,(t^{n-1},t^{n})\times\Omega}^{2}) \quad (\text{Error.6})
+    \] And globally,
+    $\eta^{2}\le C(\int_{0}^{T}\|\nabla e\|_{0,\Omega}^{2}dt+\epsilon^{2})$
+    \cite{picasso1998}.
+\end{itemize}
+
+These bounds demonstrate that the introduced error estimator terms
+effectively capture the overall discretization error in both space and
+time. This framework is essential for adaptive algorithms, as it
+provides a computable measure of the error for refining the mesh and
+adjusting the time step \cite{picasso1998}.
+
+\section{4. Implementation Details}
+
+% Questa sezione è lasciata intenzionalmente vuota per i futuri dettagli di implementazione del codice.
+
+\section{5. Numerical Experiments}
+
+% Questa sezione è lasciata intenzionalmente vuota per descrivere la configurazione dei test.
+
+\section{6. Results}
+
+% Questa sezione è lasciata intenzionalmente vuota per l'analisi dei risultati.
+
+\section{7. References}
+
+\begin{thebibliography}{99}
+\bibitem{picasso1998}
+M. Picasso, ``Adaptive finite elements for a linear parabolic problem,'' \emph{Comput. Methods Appl. Mech. Engrg.}, vol. 167, pp. 223--237, 1998. (Département de Mathématiques, Ecole Polytechnique Fédérale de Lausanne).
+\end{thebibliography}
+
+\end{document}
