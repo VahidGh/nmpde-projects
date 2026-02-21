@@ -97,9 +97,6 @@ Heat::assemble()
           const double f_old_loc = f(fe_values.quadrature_point(q), time);
           const double f_new_loc = f(fe_values.quadrature_point(q), time + delta_t);
 
-          const double sigma_loc = sigma(fe_values.quadrature_point(q));
-          const Tensor<1, dim> b_loc = b(fe_values.quadrature_point(q));
-
           for (unsigned int i = 0; i < dofs_per_cell; ++i)
             {
               for (unsigned int j = 0; j < dofs_per_cell; ++j)
