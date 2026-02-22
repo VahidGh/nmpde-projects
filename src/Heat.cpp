@@ -19,7 +19,7 @@ Heat::Heat(const std::string                              &mesh_file_name_,
   , mpi_rank(Utilities::MPI::this_mpi_process(MPI_COMM_WORLD))
   , mesh(MPI_COMM_WORLD)
   , pcout(std::cout, mpi_rank == 0)
-  , computing_timer(MPI_COMM_WORLD, pcout.get_stream(), TimerOutput::summary, TimerOutput::wall_times)
+  , computing_timer(MPI_COMM_WORLD, pcout, TimerOutput::summary, TimerOutput::wall_times)
 {}
 
 // Reads the meh from file fopr the iniziaitazion of the domain
