@@ -4,6 +4,9 @@
 #include <deal.II/base/conditional_ostream.h>
 #include <deal.II/base/quadrature_lib.h>
 #include <deal.II/base/timer.h>
+#include <deal.II/base/utilities.h>
+#include <deal.II/base/mpi.h>
+#include <deal.II/base/multithread_info.h> 
 
 #include <deal.II/distributed/fully_distributed_tria.h>
 
@@ -32,6 +35,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 
 using namespace dealii;
 
@@ -94,9 +98,9 @@ protected:
   void
   setup();
 
-  // System assembly.
-  void
-  assemble();
+  // Calcolo e assemblaggio separato delle matrici per ottimizzazione
+  void assemble_matrices();
+  void assemble_system_and_rhs();
 
   // System solution.
   void
@@ -154,11 +158,20 @@ protected:
   // System matrix.
   TrilinosWrappers::SparseMatrix system_matrix;
 
+  // Matrice M (Massa)
+  TrilinosWrappers::SparseMatrix mass_matrix;  
+
+  // Matrice A (Rigidezza)
+  TrilinosWrappers::SparseMatrix stiffness_matrix;
+
   // System right-hand side.
   TrilinosWrappers::MPI::Vector system_rhs;
 
   // System solution, without ghost elements.
   TrilinosWrappers::MPI::Vector solution_owned;
+  
+  // Vettore per salvare la soluzione precedente (usato per calcolo esplicito e output temporale)
+  TrilinosWrappers::MPI::Vector solution_owned_old;
 
   // System solution, with ghost elements.
   TrilinosWrappers::MPI::Vector solution;

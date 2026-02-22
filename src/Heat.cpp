@@ -80,136 +80,144 @@ Heat::setup()
     DoFTools::make_sparsity_pattern(dof_handler, sparsity);
     sparsity.compress();
 
-    pcout << "  Initializing the system matrix" << std::endl;
+    pcout << "  Initializing the system matrices" << std::endl;
     system_matrix.reinit(sparsity);
+    mass_matrix.reinit(sparsity);
+    stiffness_matrix.reinit(sparsity);
 
     pcout << "  Initializing vectors" << std::endl;
     system_rhs.reinit(locally_owned_dofs, MPI_COMM_WORLD);
     solution_owned.reinit(locally_owned_dofs, MPI_COMM_WORLD);
+    solution_owned_old.reinit(locally_owned_dofs, MPI_COMM_WORLD);
     solution.reinit(locally_owned_dofs, locally_relevant_dofs, MPI_COMM_WORLD);
   }
 }
 
-void
-Heat::assemble()
-{
-  TimerOutput::Scope s(computing_timer, "assemble");
-  // Number of local DoFs for each element.
-  const unsigned int dofs_per_cell = fe->dofs_per_cell;
+// Computes the mass and stiffness matrices to be re-used
+void Heat::assemble_matrices() {
+  TimerOutput::Scope s(computing_timer, "assemble_matrices");
+  
+  // Azzera le matrici globali
+  mass_matrix = 0.0;
+  stiffness_matrix = 0.0;
 
-  // Number of quadrature points for each element.
+  const unsigned int dofs_per_cell = fe->dofs_per_cell;
   const unsigned int n_q = quadrature->size();
 
-  FEValues<dim> fe_values(*fe,
-                          *quadrature,
-                          update_values | update_gradients |
-                            update_quadrature_points | update_JxW_values);
+  FEValues<dim> fe_values(*fe, *quadrature,
+                          update_values | update_gradients | update_quadrature_points | update_JxW_values);
 
-  // Local matrix and vector.
-  FullMatrix<double> cell_matrix(dofs_per_cell, dofs_per_cell);
-  Vector<double>     cell_rhs(dofs_per_cell);
-
+  FullMatrix<double> cell_mass(dofs_per_cell, dofs_per_cell);
+  FullMatrix<double> cell_stiffness(dofs_per_cell, dofs_per_cell);
   std::vector<types::global_dof_index> dof_indices(dofs_per_cell);
 
-  // Reset the global matrix and vector, just in case.
-  system_matrix = 0.0;
-  system_rhs    = 0.0;
+  for (const auto &cell : dof_handler.active_cell_iterators()) {
+    if (!cell->is_locally_owned()) continue;
 
-  // Evaluation of the old solution on quadrature nodes of current cell.
-  std::vector<double> solution_old_values(n_q);
+    fe_values.reinit(cell);
+    cell_mass = 0.0;
+    cell_stiffness = 0.0;
 
-  // Evaluation of the gradient of the old solution on quadrature nodes of
-  // current cell.
-  std::vector<Tensor<1, dim>> solution_old_grads(n_q);
+    for (unsigned int q = 0; q < n_q; ++q) {
+      const double mu_loc = mu(fe_values.quadrature_point(q));
 
-  for (const auto &cell : dof_handler.active_cell_iterators())
-    {
-      if (!cell->is_locally_owned())
-        continue;
+      for (unsigned int i = 0; i < dofs_per_cell; ++i) {
+        for (unsigned int j = 0; j < dofs_per_cell; ++j) {
+          // Matrice di Massa M
+          cell_mass(i, j) += fe_values.shape_value(i, q) * fe_values.shape_value(j, q) * fe_values.JxW(q);
 
-      fe_values.reinit(cell);
-
-      cell_matrix = 0.0;
-      cell_rhs    = 0.0;
-
-      // Evaluate the old solution and its gradient on quadrature nodes.
-      fe_values.get_function_values(solution, solution_old_values);
-      fe_values.get_function_gradients(solution, solution_old_grads);
-
-      for (unsigned int q = 0; q < n_q; ++q)
-        {
-          const double mu_loc = mu(fe_values.quadrature_point(q));
-
-          const double f_old_loc =
-            f(fe_values.quadrature_point(q), time - delta_t);
-          const double f_new_loc = f(fe_values.quadrature_point(q), time);
-
-          for (unsigned int i = 0; i < dofs_per_cell; ++i)
-            {
-              for (unsigned int j = 0; j < dofs_per_cell; ++j)
-                {
-                  // Time derivative.
-                  cell_matrix(i, j) += (1.0 / delta_t) * //
-                                       fe_values.shape_value(i, q) * //
-                                       fe_values.shape_value(j, q) * //
-                                       fe_values.JxW(q);
-
-                  // Diffusion.
-                  cell_matrix(i, j) +=
-                    theta * mu_loc * //
-                    scalar_product(fe_values.shape_grad(i, q),   //
-                                   fe_values.shape_grad(j, q)) * //
-                    fe_values.JxW(q);
-                }
-
-              // Time derivative.
-              cell_rhs(i) += (1.0 / delta_t) * //
-                             fe_values.shape_value(i, q) * //
-                             solution_old_values[q] * //
-                             fe_values.JxW(q);
-
-              // Diffusion.
-              cell_rhs(i) -= (1.0 - theta) * mu_loc * //
-                             scalar_product(fe_values.shape_grad(i, q), //
-                                            solution_old_grads[q]) * //
-                             fe_values.JxW(q);
-
-              // Forcing term.
-              cell_rhs(i) +=
-                (theta * f_new_loc + (1.0 - theta) * f_old_loc) * //
-                fe_values.shape_value(i, q) * //
-                fe_values.JxW(q);
-            }
+          // Matrice di Rigidezza A (Diffusione)
+          cell_stiffness(i, j) += mu_loc * scalar_product(fe_values.shape_grad(i, q), 
+                                                 fe_values.shape_grad(j, q)) * fe_values.JxW(q);
         }
-
-      cell->get_dof_indices(dof_indices);
-
-      system_matrix.add(dof_indices, cell_matrix);
-      system_rhs.add(dof_indices, cell_rhs);
+      }
     }
+    
+    cell->get_dof_indices(dof_indices);
+    mass_matrix.add(dof_indices, cell_mass);
+    stiffness_matrix.add(dof_indices, cell_stiffness);
+  }
 
-  system_matrix.compress(VectorOperation::add);
-  system_rhs.compress(VectorOperation::add);
-
-  // Homogeneous Neumann boundary conditions: we do nothing.
+  mass_matrix.compress(VectorOperation::add);
+  stiffness_matrix.compress(VectorOperation::add);
 }
+
+// System assembled from the computed matrices and assembling the rhs
+void Heat::assemble_system_and_rhs() {
+  TimerOutput::Scope s(computing_timer, "assemble_system_and_rhs");
+
+  // 1. Costruiamo la matrice di sistema: S = (1/dt) * M + theta * A
+  // Copiamo M in S per efficienza, la scaliamo e aggiungiamo A
+  system_matrix.copy_from(mass_matrix);
+  system_matrix *= (1.0 / delta_t);
+  system_matrix.add(theta, stiffness_matrix);
+
+  // 2. Calcoliamo i contributi della soluzione vecchia al RHS tramite prodotti Matrice-Vettore
+  // RHS = ( (1/dt)*M - (1 - theta)*A ) * u_old
+  system_rhs = 0.0;
+  TrilinosWrappers::MPI::Vector tmp(solution_owned); // Vettore temporaneo con stesso layout
+
+  // + (1/dt) * M * u_old
+  mass_matrix.vmult(tmp, solution_owned_old);
+  system_rhs.add(1.0 / delta_t, tmp);
+
+  // - (1 - theta) * A * u_old
+  stiffness_matrix.vmult(tmp, solution_owned_old);
+  system_rhs.add(-(1.0 - theta), tmp);
+
+  // 3. Calcoliamo la forzante f (richiede un loop sulle celle, ma solo sui valori)
+  const unsigned int dofs_per_cell = fe->dofs_per_cell;
+  const unsigned int n_q = quadrature->size();
+  FEValues<dim> fe_values(*fe, *quadrature, update_values | update_quadrature_points | update_JxW_values);
+
+  Vector<double> cell_rhs(dofs_per_cell);
+  std::vector<types::global_dof_index> dof_indices(dofs_per_cell);
+
+  for (const auto &cell : dof_handler.active_cell_iterators()) {
+    if (!cell->is_locally_owned()) continue;
+
+    fe_values.reinit(cell);
+    cell_rhs = 0.0;
+
+    for (unsigned int q = 0; q < n_q; ++q) {
+      const double f_old_loc = f(fe_values.quadrature_point(q), time);
+      const double f_new_loc = f(fe_values.quadrature_point(q), time + delta_t);
+
+      for (unsigned int i = 0; i < dofs_per_cell; ++i) {
+        cell_rhs(i) += (theta * f_new_loc + (1.0 - theta) * f_old_loc) * fe_values.shape_value(i, q) * fe_values.JxW(q);
+      }
+    }
+    cell->get_dof_indices(dof_indices);
+    system_rhs.add(dof_indices, cell_rhs);
+  }
+  
+  system_rhs.compress(VectorOperation::add);
+}
+
 
 void
 Heat::solve_linear_system()
 {
   TimerOutput::Scope s(computing_timer, "solve_linear_system");
-  TrilinosWrappers::PreconditionSSOR preconditioner;
-  preconditioner.initialize(
-    system_matrix, TrilinosWrappers::PreconditionSSOR::AdditionalData(1.0));
+  
+  // Usiamo il precondizionatore Algebraic Multigrid (AMG) di Trilinos
+  TrilinosWrappers::PreconditionAMG preconditioner;
+  
+  // Configuriamo i parametri per un problema di tipo parabolico/ellittico
+  TrilinosWrappers::PreconditionAMG::AdditionalData amg_data;
+  amg_data.elliptic = true;
+  amg_data.smoother_sweeps = 2;
+  amg_data.smoother_type = "ML symmetric Gauss-Seidel";
+  
+  preconditioner.initialize(system_matrix, amg_data);
 
   ReductionControl solver_control(/* maxiter = */ 10000,
-                                  /* tolerance = */ 1.0e-16,
+                                  /* tolerance = */ 1.0e-12,
                                   /* reduce = */ 1.0e-6);
 
   SolverCG<TrilinosWrappers::MPI::Vector> solver(solver_control);
 
   solver.solve(system_matrix, solution_owned, system_rhs, preconditioner);
-  pcout << solver_control.last_step() << " CG iterations" << std::endl;
 }
 
 void
@@ -245,8 +253,12 @@ Heat::run()
   {
     setup();
 
+    // Calcoliamo M e A statiche prima di iniziare il ciclo temporale
+    assemble_matrices();
+
     VectorTools::interpolate(dof_handler, FunctionU0(), solution_owned);
     solution = solution_owned;
+    solution_owned_old = solution_owned; // Inizializza il vettore history
 
     time            = 0.0;
     timestep_number = 0;
@@ -257,23 +269,30 @@ Heat::run()
 
   pcout << "===============================================" << std::endl;
 
-  // Time-stepping loop.
+  const double output_interval = 0.05; // Frequenza di salvataggio I/O
+  double next_output_time = output_interval;
+
+  // Time-stepping loop (Fixed delta_t)
   while (time < T - 0.5 * delta_t)
     {
       time += delta_t;
       ++timestep_number;
 
-      pcout << "Timestep " << std::setw(3) << timestep_number
-            << ", time = " << std::setw(4) << std::fixed << std::setprecision(2)
-            << time << " : ";
-
-      assemble();
+      assemble_system_and_rhs();
       solve_linear_system();
 
-      // Perform parallel communication to update the ghost values of the
-      // solution vector.
+      // Perform parallel communication to update the ghost values
       solution = solution_owned;
+      solution_owned_old = solution_owned; // Salva per il prossimo step
 
-      output();
+      // Throttling dell'output su disco
+      if (time >= next_output_time || time >= T) {
+        pcout << "  --> Salvataggio output a t = " << time << std::endl;
+        output();
+        
+        while (next_output_time <= time && next_output_time < T) {
+          next_output_time += output_interval;
+        }
+      }
     }
 }
