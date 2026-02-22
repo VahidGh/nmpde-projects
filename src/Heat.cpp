@@ -128,7 +128,7 @@ void Heat::assemble_system_and_rhs() {
   system_matrix *= (1.0 / delta_t);
   system_matrix.add(theta, stiffness_matrix);
 
-  // 2. Calcoliamo i contributi della soluzione vecchia al RHS tramite prodotti Matrice-Vettore
+  // 2. Calcoliamo i contributi della soluzione vecchia al RHS tramite mvm
   // RHS = ( (1/dt)*M - (1 - theta)*A ) * u_old
   system_rhs = 0.0;
   TrilinosWrappers::MPI::Vector tmp(solution_owned); // Vettore temporaneo con stesso layout
@@ -141,7 +141,7 @@ void Heat::assemble_system_and_rhs() {
   stiffness_matrix.vmult(tmp, solution_owned_old);
   system_rhs.add(-(1.0 - theta), tmp);
 
-  // 3. Calcoliamo la forzante f (richiede un loop sulle celle, ma solo sui valori, non sui gradienti)
+  // 3. Calcoliamo la forzante f
   const unsigned int dofs_per_cell = fe->dofs_per_cell;
   const unsigned int n_q = quadrature->size();
   FEValues<dim> fe_values(*fe, *quadrature, update_values | update_quadrature_points | update_JxW_values);
@@ -175,10 +175,10 @@ void Heat::solve_linear_system()
 {
   TimerOutput::Scope s(computing_timer, "solve_linear_system");
   
-  // Usiamo il precondizionatore Algebraic Multigrid (AMG) di Trilinos
+  
   TrilinosWrappers::PreconditionAMG preconditioner;
   
-  // Configuriamo i parametri per un problema di tipo parabolico/ellittico
+  // Configuriamo i parametri per un problema di tipo parabolico
   TrilinosWrappers::PreconditionAMG::AdditionalData amg_data;
   amg_data.elliptic = true;
   amg_data.smoother_sweeps = 2;
@@ -190,7 +190,7 @@ void Heat::solve_linear_system()
                                   /* tolerance = */ 1.0e-12,
                                   /* reduce = */ 1.0e-6);
 
-  // Il Conjugate Gradient (CG) è perfetto per matrici simmetriche e definite positive
+  // Il Conjugate Gradient (CG) per sistemi simmetrici (b = 0)
   SolverCG<TrilinosWrappers::MPI::Vector> solver(solver_control);
 
   solver.solve(system_matrix, solution_owned, system_rhs, preconditioner);
@@ -272,7 +272,7 @@ void Heat::run() {
   solution = solution_owned;
   solution_owned_old = solution_owned;
 
-  const double output_interval = 0.05; // Scegli tu l'intervallo desiderato
+  const double output_interval = 0.05; // intervallo in cui vengono prese due soluzioni successive
   double next_output_time = 0.0;       // Forza il salvataggio del dato iniziale a t=0
 
   while (time < T) {
@@ -316,7 +316,6 @@ void Heat::run() {
     // Dopo uno step accettato, gestiamo l'adattività spaziale
     if (timestep_number % 5 == 0) {
       refine_mesh();
-      // assemble_matrices() rimosso da qui perché refine_mesh() lo chiama già al suo interno
     }
 
     solution = solution_owned;
