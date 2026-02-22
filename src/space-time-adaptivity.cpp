@@ -14,12 +14,6 @@ main(int argc, char *argv[])
 
   Utilities::MPI::MPI_InitFinalize mpi_init(argc, argv);
   
-  // Overall timer for the entire program execution
-  TimerOutput overall_timer(MPI_COMM_WORLD, std::cout,
-                            TimerOutput::summary,
-                            TimerOutput::wall_times);
-  TimerOutput::Scope overall_scope(overall_timer, "Full Program Run");
-
   // Coefficiente di Diffusione (mu)
   const auto mu = [](const Point<dim> & /*p*/) { 
     return 1.0; 
