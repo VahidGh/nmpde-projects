@@ -3,6 +3,7 @@
 
 #include <deal.II/base/conditional_ostream.h>
 #include <deal.II/base/quadrature_lib.h>
+#include <deal.II/base/timer.h>
 
 #include <deal.II/distributed/fully_distributed_tria.h>
 
@@ -57,7 +58,7 @@ public:
 
     // Evaluation of the function. u( t = 0); p[0] = x, p[1] = y, p[2] = z.
     virtual double
-    value(const Point<dim> &p,
+    value(const Point<dim> &/*p*/,
           const unsigned int /*component*/ = 0) const override
     {
       return 0;
@@ -103,31 +104,22 @@ public:
       const double                                    &theta_,
       const double                                    &delta_t_,
       const std::function<double(const Point<dim> &)> &mu_,
-      const std::function<double(const Point<dim> &, const double &)> &f_)
-    : mesh_file_name(mesh_file_name_)
-    , r(r_)
-    , T(T_)
-    , theta(theta_)
-    , delta_t(delta_t_)
-    , mu(mu_)
-    , f(f_)
-    , mpi_size(Utilities::MPI::n_mpi_processes(MPI_COMM_WORLD))
-    , mpi_rank(Utilities::MPI::this_mpi_process(MPI_COMM_WORLD))
-    , mesh(MPI_COMM_WORLD)
-    , pcout(std::cout, mpi_rank == 0)
-  {}
+      const std::function<double(const Point<dim> &, const double &)> &f_);
 
   // Run the time-dependent simulation.
   void
   run();
 
+  // Getters for global statistics
+  unsigned int get_timestep_number() const { return timestep_number; }
+  double get_final_time() const { return T; }
+  std::string get_mesh_filename() const { return mesh_file_name; }
+
 protected:
   
-  /*
-  // Initialization.
-  void
-  setup();
-  */
+  void setup_system(); // Ex setup(), ora gestisce solo matrici/DoF
+  void init_mesh();    // Nuova funzione per leggere la mesh solo una volta
+  void refine_mesh();  // La funzione core per l'adattività
 
   // System assembly.
   void
@@ -136,10 +128,6 @@ protected:
   // System solution.
   void
   solve_linear_system();
-
-  void setup_system(); // Ex setup(), ora gestisce solo matrici/DoF
-  void init_mesh();    // Nuova funzione per leggere la mesh solo una volta
-  void refine_mesh();  // La funzione core per l'adattività
 
   // Output.
   void
@@ -213,6 +201,9 @@ protected:
 
   // Output stream for process 0.
   ConditionalOStream pcout;
+
+  // Timer for profiling different parts of the program
+  mutable TimerOutput computing_timer;
 };
 
 #endif

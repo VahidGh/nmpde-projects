@@ -1,6 +1,31 @@
 #include "Heat.hpp"
+#include <iomanip> // Required for std::fixed and std::setprecision
+
+// Constructor definition
+Heat::Heat(const std::string                              &mesh_file_name_, 
+           const unsigned int                              &r_,
+           const double                                    &T_,
+           const double                                    &theta_,
+           const double                                    &delta_t_,
+           const std::function<double(const Point<dim> &)> &mu_,
+           const std::function<double(const Point<dim> &, const double &)> &f_)
+  : mesh_file_name(mesh_file_name_)
+  , r(r_)
+  , T(T_)
+  , theta(theta_)
+  , delta_t(delta_t_)
+  , mu(mu_)
+  , f(f_)
+  , mpi_size(Utilities::MPI::n_mpi_processes(MPI_COMM_WORLD))
+  , mpi_rank(Utilities::MPI::this_mpi_process(MPI_COMM_WORLD))
+  , mesh(MPI_COMM_WORLD)
+  , pcout(std::cout, mpi_rank == 0)
+  , computing_timer(MPI_COMM_WORLD, pcout.get_stream(), TimerOutput::summary, TimerOutput::wall_times)
+{}
+
 
 void Heat::init_mesh() {
+  TimerOutput::Scope s(computing_timer, "init_mesh");
   pcout << "Initializing the mesh from file" << std::endl;
   Triangulation<dim> mesh_serial;
   GridIn<dim> grid_in;
@@ -18,6 +43,7 @@ void Heat::init_mesh() {
 }
 
 void Heat::setup_system() {
+  TimerOutput::Scope s(computing_timer, "setup_system");
 
   if (!fe) {
     fe = std::make_unique<FE_SimplexP<dim>>(r);
@@ -47,6 +73,7 @@ void Heat::setup_system() {
 void
 Heat::assemble()
 {
+  TimerOutput::Scope s(computing_timer, "assemble");
   // Number of local DoFs for each element.
   const unsigned int dofs_per_cell = fe->dofs_per_cell;
 
@@ -83,7 +110,7 @@ Heat::assemble()
       fe_values.reinit(cell);
 
       cell_matrix = 0.0;
-      cell_rhs    = 0.0;
+      cell_rhs     = 0.0;
 
       // Evaluate the old solution and its gradient on quadrature nodes.
       fe_values.get_function_values(solution, solution_old_values);
@@ -155,6 +182,7 @@ Heat::assemble()
 void
 Heat::solve_linear_system()
 {
+  TimerOutput::Scope s(computing_timer, "solve_linear_system");
   
   TrilinosWrappers::PreconditionSSOR preconditioner;
   preconditioner.initialize(
@@ -173,6 +201,7 @@ Heat::solve_linear_system()
 
 
 void Heat::refine_mesh() {
+  TimerOutput::Scope s(computing_timer, "refine_mesh");
   pcout << "  Estimating error and refining..." << std::endl;
 
   Vector<float> estimated_error_per_cell(mesh.n_active_cells());
@@ -211,6 +240,7 @@ void Heat::refine_mesh() {
 void
 Heat::output() const
 {
+  TimerOutput::Scope s(computing_timer, "output");
   DataOut<dim> data_out;
 
   data_out.add_data_vector(dof_handler, solution, "solution");
@@ -233,6 +263,8 @@ Heat::output() const
 }
 
 void Heat::run() {
+  TimerOutput::Scope s(computing_timer, "run");
+
   init_mesh();
   setup_system();
   VectorTools::interpolate(dof_handler, FunctionU0(), solution_owned);
@@ -277,4 +309,11 @@ void Heat::run() {
     solution_owned_old = solution_owned;
     output();
   }
+
+  // Print summary of internal timers at the end of the run method.
+  pcout << "\n===============================================" << std::endl;
+  pcout << "PERFORMANCE PROFILE (Heat::run)" << std::endl;
+  pcout << "-----------------------------------------------" << std::endl;
+  computing_timer.print_summary();
+  pcout << "===============================================\n" << std::endl;
 }
