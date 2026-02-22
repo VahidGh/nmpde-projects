@@ -32,10 +32,6 @@
 #include <deal.II/numerics/matrix_tools.h>
 #include <deal.II/numerics/vector_tools.h>
 
-#include <deal.II/numerics/error_estimator.h>
-#include <deal.II/grid/grid_refinement.h>
-#include <deal.II/numerics/solution_transfer.h>
-
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -52,7 +48,6 @@ public:
   // Physical dimension (1D, 2D, 3D)
   static constexpr unsigned int dim = 3;
 
-  
   // Initial condition.
   class FunctionU0 : public Function<dim>
   {
@@ -121,9 +116,8 @@ public:
 
 protected:
   
-  void setup_system(); // Ex setup(), ora gestisce solo matrici/DoF
-  void init_mesh();    // Nuova funzione per leggere la mesh solo una volta
-  void refine_mesh();  // La funzione core per l'adattività
+  void setup_system(); 
+  void init_mesh();    
 
   // calculate the two matrices
   void assemble_matrices();
@@ -149,14 +143,8 @@ protected:
   // Theta parameter for the theta method.
   const double theta;
 
-  // Time step.
-  double delta_t;
-
-  
-  const double tol_time_max = 5e-3; // Soglia massima errore temporale
-  const double tol_time_min = 1e-4; // Soglia minima per aumentare delta_t
-  const double dt_min = 1e-5;       // Limite inferiore per delta_t
-  const double dt_max = 0.1;        // Limite superiore per delta_t
+  // Time step (ora costante, quindi const)
+  const double delta_t;
 
   // Current time.
   double time = 0.0;
@@ -200,7 +188,7 @@ protected:
   // System right-hand side.
   TrilinosWrappers::MPI::Vector system_rhs;
   
-  // Vettore per salvare la soluzione prima della rifinitura 
+  // Vettore per salvare la soluzione al passo precedente (ci serve per il RHS!)
   TrilinosWrappers::MPI::Vector solution_owned_old;
 
   // System solution, without ghost elements.

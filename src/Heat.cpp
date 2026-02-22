@@ -19,7 +19,7 @@ Heat::Heat(const std::string                              &mesh_file_name_,
   , mpi_rank(Utilities::MPI::this_mpi_process(MPI_COMM_WORLD))
   , mesh(MPI_COMM_WORLD)
   , pcout(std::cout, mpi_rank == 0)
-  , computing_timer(MPI_COMM_WORLD, pcout, TimerOutput::summary, TimerOutput::wall_times)
+  , computing_timer(MPI_COMM_WORLD, pcout.get_stream(), TimerOutput::summary, TimerOutput::wall_times)
 {}
 
 // Reads the meh from file fopr the iniziaitazion of the domain
@@ -63,6 +63,7 @@ void Heat::setup_system() {
   // Re-inizializzazione di matrice e vettori
   mass_matrix.reinit(sparsity);
   stiffness_matrix.reinit(sparsity);
+  system_matrix.reinit(sparsity);
   system_rhs.reinit(locally_owned_dofs, MPI_COMM_WORLD);
   solution_owned.reinit(locally_owned_dofs, MPI_COMM_WORLD);
   solution_owned_old.reinit(locally_owned_dofs, MPI_COMM_WORLD);
@@ -198,44 +199,6 @@ void Heat::solve_linear_system()
   pcout << "  -> " << solver_control.last_step() << " CG iterations (AMG Preconditioned)" << std::endl;
 }
 
-// Function called to dynamically refine the mesh based on the spatial error (Kelly estimator)
-void Heat::refine_mesh() {
-  TimerOutput::Scope s(computing_timer, "refine_mesh");
-  pcout << "  Estimating error and refining..." << std::endl;
-
-  Vector<float> estimated_error_per_cell(mesh.n_active_cells());
-  KellyErrorEstimator<dim>::estimate(dof_handler,
-                                     QGauss<dim - 1>(r + 1),
-                                     {},
-                                     solution, 
-                                     estimated_error_per_cell);
-
-  GridRefinement::refine_and_coarsen_fixed_number(mesh, 
-                                                  estimated_error_per_cell, 
-                                                  0.3, 0.1);
-
-  // 1. Salviamo una copia locale della soluzione attuale (mesh vecchia)
-  TrilinosWrappers::MPI::Vector old_solution = solution_owned;
-
-  // 2. SolutionTransfer "cattura" i valori sulla vecchia mesh
-  SolutionTransfer<dim, TrilinosWrappers::MPI::Vector> sol_trans(dof_handler);
-  sol_trans.prepare_for_coarsening_and_refinement(old_solution);
-
-  // 3. La mesh cambia fisicamente
-  mesh.execute_coarsening_and_refinement();
-
-  // 4. I gradi di libertà vengono ridistribuiti e solution_owned 
-  //    viene riallocato con le nuove dimensioni (pieno di zeri)
-  setup_system(); 
-  assemble_matrices(); // Ricalcoliamo M e A sulla nuova mesh
-
-  // 5. SolutionTransfer inietta i valori interpolati passando (old_vector, new_vector)
-  sol_trans.interpolate(old_solution, solution_owned);
-  
-  // 6. Aggiorniamo la variabile con i ghost per l'output/errore
-  solution = solution_owned;
-}
-
 // output allega i file in uscita con intervalli di tempo regolari
 void Heat::output() const
 {
@@ -261,7 +224,7 @@ void Heat::output() const
                                       MPI_COMM_WORLD);
 }
 
-// Function run where you copute the L2 norm error and compute the new delta_t if needed
+// Function run with fixed delta_t time stepping
 void Heat::run() {
   TimerOutput::Scope s(computing_timer, "run");
 
@@ -273,64 +236,34 @@ void Heat::run() {
   solution_owned_old = solution_owned;
 
   const double output_interval = 0.05; // Scegli tu l'intervallo desiderato
-  double next_output_time = 0.0;       // Forza il salvataggio del dato iniziale a t=0
+  
+  // Output a t=0 iniziale
+  pcout << "  --> Salvataggio output a t = " << time << std::endl;
+  output();
+  
+  double next_output_time = output_interval;       
 
-  while (time < T) {
-    bool step_accepted = false;
-    double error_t = 0.0;
-    
-    while (!step_accepted) {
+  // Standard fixed time-stepping loop
+  while (time < T - 0.5 * delta_t) {
+      
+      time += delta_t;
+      timestep_number++;
+      
       assemble_system_and_rhs();
       solve_linear_system();
 
-      // Calcoliamo u_new - u_old
-      TrilinosWrappers::MPI::Vector diff = solution_owned;
-      diff.add(-1.0, solution_owned_old);
-
-      // Trucco FEM: ||e||_{L^2}^2 = e^T * M * e
-      TrilinosWrappers::MPI::Vector M_diff(solution_owned);
-      mass_matrix.vmult(M_diff, diff); // M_diff = M * e
+      // Aggiorniamo le variabili
+      solution = solution_owned;
+      solution_owned_old = solution_owned;
       
-      // Il prodotto scalare di vettori MPI in deal.II fa già la somma globale su tutti i processi
-      double error_l2_sq = diff * M_diff; 
-      error_t = std::sqrt(error_l2_sq);
-
-
-      if (error_t > tol_time_max && delta_t > dt_min) {
-        // Errore troppo grande: riduciamo dt e non avanziamo nel tempo
-        delta_t /= 2.0;
-        pcout << "  Step rejected! New delta_t = " << delta_t << std::endl;
-        solution_owned = solution_owned_old;
-      } 
-      else {
-        // Errore accettabile o dt minimo raggiunto: procediamo
-        step_accepted = true;
-        time += delta_t;
-        timestep_number++;
+      // Controllo del throttling dell'output
+      if (time >= next_output_time || time >= T - 0.5 * delta_t) {
+        pcout << "  --> Salvataggio output a t = " << time << std::endl;
+        output();
         
-        if (error_t < tol_time_min && delta_t < dt_max)
-          delta_t *= 1.2; 
+        while (next_output_time <= time && next_output_time < T) {
+          next_output_time += output_interval;
+        }
       }
-    }
-
-    // Dopo uno step accettato, gestiamo l'adattività spaziale
-    if (timestep_number % 5 == 0) {
-      refine_mesh();
-      // assemble_matrices() rimosso da qui perché refine_mesh() lo chiama già al suo interno
-    }
-
-    solution = solution_owned;
-    solution_owned_old = solution_owned;
-    
-    if (time >= next_output_time || time >= T) {
-      pcout << "  --> Salvataggio output a t = " << time << std::endl;
-      output();
-      
-      // Aggiorniamo il traguardo. Usiamo un while nel caso in cui un 
-      // singolo delta_t sia stato stranamente più grande dell'intervallo di output
-      while (next_output_time <= time && next_output_time < T) {
-        next_output_time += output_interval;
-      }
-    }
   }
 }

@@ -13,12 +13,13 @@ main(int argc, char *argv[])
   constexpr unsigned int dim = Heat::dim;
 
   Utilities::MPI::MPI_InitFinalize mpi_init(argc, argv);
-
+  
+  // Overall timer for the entire program execution (come da te richiesto)
   TimerOutput overall_timer(MPI_COMM_WORLD, std::cout,
-                             TimerOutput::summary,
+                            TimerOutput::summary,
                             TimerOutput::wall_times);
   TimerOutput::Scope overall_scope(overall_timer, "Full Program Run");
-  
+
   // Coefficiente di Diffusione (mu)
   const auto mu = [](const Point<dim> & /*p*/) { 
     return 1.0; 
@@ -37,11 +38,11 @@ main(int argc, char *argv[])
   };
 
   // Istanziazione del problema
-  Heat problem(/*mesh_file_name = */ "../mesh/mesh-cube-10.msh",
+  Heat problem(/*mesh_file_name = */ "../mesh/mesh-cube-40.msh",
                /* degree = */ 2,
                /* T = */ 1.0,
                /* theta = */ 1.0,    
-               /* delta_t = */ 0.001,
+               /* delta_t = */ 0.001, // Nel non-adattivo questo delta_t rimarrà fisso!
                mu,
                f);    
 
