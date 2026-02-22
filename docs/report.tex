@@ -83,8 +83,8 @@
 Partial Differential Equations (PDEs) are fundamental mathematical
 models for phenomena across various scientific and engineering
 disciplines. While analytical solutions are often intractable for
-complex problems, numerical methods, particularly the Finite Element
-Method (FEM), offer robust approximation strategies. For time-dependent
+complex problems, numerical methods, particularly the \textit{Finite Element
+Method (FEM)}, offer robust approximation strategies. For time-dependent
 problems, such as the heat equation, the computational domain spans both
 space and time, presenting challenges in achieving accuracy and
 efficiency with uniform discretizations.
@@ -103,8 +103,8 @@ formulations, mathematical analysis, numerical discretization via FEM
 coupled with time-stepping schemes, and the theoretical underpinnings of
 error estimation crucial for adaptive algorithms. The goal is to lay the
 groundwork for developing an adaptive formulation that dynamically refines
-the space-time grid based on error indicators, a strategy extensively
-discussed in the context of a posteriori error estimates for parabolic
+the space-time grid based on \textit{a posteriori} error indicators, a strategy extensively
+discussed in the context of \textit{a posteriori} error estimates for parabolic
 problems \cite{picasso1998}.
 
 \section{2. Mathematical Formulation}
@@ -170,7 +170,7 @@ $Q_T = \Omega \times (0, T]$.
 
 To enable numerical solution, especially for solutions that may not
 possess the high regularity required for the strong form, we derive the
-weak (variational) formulation of the problem. This involves multiplying
+weak (\textit{variational}) formulation of the problem. This involves multiplying
 the PDE by a spatially-dependent test function and integrating over the
 spatial domain.
 
@@ -239,7 +239,7 @@ will typically be a Sobolev space, as discussed below.
 
 The mathematical analysis for parabolic problems involves establishing
 the existence, uniqueness, and stability of the weak solution. These
-properties are critical to guarantee that the problem is well-posed and
+properties are critical to guarantee that the problem is \textit{well-posed} and
 that numerical approximations are meaningful. The analysis often draws
 on functional analysis tools, such as the Lax-Milgram Lemma for the
 spatial elliptic operator, extended to the time-dependent setting via
@@ -369,7 +369,7 @@ discretization. This corresponds to choosing $\theta = 1$.
 
 For $\theta=1$:
 \begin{itemize}
-\item The scheme is first-order accurate in time ($O(\Delta t)$).
+\item The scheme is first-order accurate in time ($\mathcal{O}(\Delta t)$).
 \item It is unconditionally stable, meaning it remains bounded for any choice of $\Delta t > 0$.
 \end{itemize}
 
@@ -401,7 +401,7 @@ numerical approximation $u_{h\tau}$ would be: \[
 \|u - u_{h\tau}\|_{norm} \le C (H + \Delta t)
 \] This indicates first-order convergence in both space and time.
 
-Detailed a posteriori error estimates for the error $e = u - u_{h\tau}$ in the $L^2$ in time, $H^1$ in space norm are established in \cite{picasso1998}. The error estimator is comprised of three main contributions: $\eta$, $\epsilon$, and $\gamma$ \cite{picasso1998}.
+Detailed \textit{a posteriori} error estimates for the error $e = u - u_{h\tau}$ in the $L^2$ in time, $H^1$ in space norm are established in \cite{picasso1998}. The error estimator is comprised of three main contributions: $\eta$, $\epsilon$, and $\gamma$ \cite{picasso1998}.
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
@@ -441,7 +441,7 @@ elements and time steps \cite{picasso1998}.
     \textbf{Upper Bound (Theorem 2.1):} Under certain assumptions (regular
     meshes, nested triangulations, $f \in H^1((0,T)\times\Omega)$), for
     $h$ small enough, the error is bounded above: \[
-    \|e(\cdot,t^{n})\|_{0,\Omega}^{2}+\int_{t^{n-1}}^{t^{n}}\|\nabla e\|_{0,\Omega}^{2}dt\le\|e(\cdot,t^{n-1})\|_{0,\Omega}^{2}+C((\eta^{n})^{2}+(\epsilon^{n})^{2}+(\gamma^{n})^{2}+h^{4}|f|_{1,(t^{n-1},t^{n})\times\Omega}^{2}) \quad (\text{Error.5})
+    \|e(\cdot,t^{n})\|_{0,\Omega}^{2}+\int_{t^{n-1}}^{t^{n}}\\|\nabla e\|_{0,\Omega}^{2}dt\le\|e(\cdot,t^{n-1})\|_{0,\Omega}^{2}+C((\eta^{n})^{2}+(\epsilon^{n})^{2}+(\gamma^{n})^{2}+h^{4}|f|_{1,(t^{n-1},t^{n})\times\Omega}^{2}) \quad (\text{Error.5})
     \] Summing over time steps, the global error follows
     $\int_{0}^{T}\|\nabla e\|_{0,\Omega}^{2}dt\le C(\eta^{2}+\epsilon^{2}+\gamma^{2})$
     \cite{picasso1998}. 
@@ -462,9 +462,9 @@ adjusting the time step \cite{picasso1998}.
 
 \section{4. Implementation Details}
 
-The numerical resolution of the formulated parabolic problem is accomplished through a specialized C++ implementation utilizing the deal.II finite element library. The computational strategy is inherently Object-Oriented (OOP), encapsulating the problem definition, discretization parameters, and functional logic within a primary \texttt{Heat} class. This encapsulation facilitates data hiding and modularity. The forcing term $f(x,t)$, given its separable nature $g(t)h(x)$, is structured using customized classes (\texttt{g\_function} and \texttt{h\_function}) that inherit from the deal.II \texttt{Function} base class, allowing for transparent evaluation at arbitrary coordinates and temporal instances.
+The numerical resolution of the formulated parabolic problem is accomplished through a specialized C++ implementation utilizing the deal.II finite element library. The computational strategy is inherently \textit{Object-Oriented} (OOP), encapsulating the problem definition, discretization parameters, and functional logic within a primary \texttt{Heat} class. This encapsulation facilitates data hiding and modularity. The forcing term $f(x,t)$, given its separable nature $g(t)h(x)$, is structured using customized classes (\texttt{g\_function} and \texttt{h\_function}) that inherit from the deal.II \texttt{Function} base class, allowing for transparent evaluation at arbitrary coordinates and temporal instances.
 
-To achieve high computational performance, the solver integrates distributed memory parallelism via the Message Passing Interface (MPI). The spatial domain is partitioned across multiple processors using \texttt{parallel::fullydistributed::Triangulation}. Furthermore, the implementation relies heavily on the Trilinos framework for distributed linear algebra structures, employing \texttt{TrilinosWrappers::SparseMatrix} and \texttt{TrilinosWrappers::MPI::Vector} to manage the global system across the cluster. Performance profiling is embedded directly into the solver logic utilizing deal.II's \texttt{TimerOutput} module, enabling precise measurement of computational bottlenecks such as matrix assembly and linear system resolution.
+To achieve high computational performance, the solver integrates distributed memory parallelism via the \textit{Message Passing Interface} (MPI). The spatial domain is partitioned across multiple processors using \texttt{parallel::fullydistributed::Triangulation}. Furthermore, the implementation relies heavily on the Trilinos framework for distributed linear algebra structures, employing \texttt{TrilinosWrappers::SparseMatrix} and \texttt{TrilinosWrappers::MPI::Vector} to manage the global system across the cluster. Performance profiling is embedded directly into the solver logic utilizing deal.II's \texttt{TimerOutput} module, enabling precise measurement of computational bottlenecks such as matrix assembly and linear system resolution.
 
 \subsection{Architectural Optimizations and Preconditioning}
 
@@ -495,7 +495,7 @@ To further accelerate the temporal loop, the linear system $\mathbf{S} \mathbf{U
 
 To evaluate the computational efficiency and accuracy gains provided by the adaptive schemes, a strictly homogeneous, non-adaptive baseline is formulated. This reference solver maintains a fixed spatial discretization (initialized from the external mesh file) and a constant temporal integration step ($\Delta t = 0.001$) throughout the simulation domain $T$. Both implementations share the exact same architectural foundation, utilizing identical polynomial degrees ($P_2$ elements), the same Algebraic Multigrid preconditioner, and identical matrix pre-assembly strategies to ensure an isolated, mathematically rigorous evaluation of the adaptivity.
 
-The non-adaptive execution loop sequentially advances the solution state by computing the linear algebraic system corresponding to each static temporal increment. It lacks any localized error estimation and does not reallocate degrees of freedom. To mitigate excessive disk I/O operations and ensure an "apples-to-apples" comparison with the adaptive variant, output records (VTU+PVTU) are throttled and written to disk at strict intervals (every $0.05$ seconds).
+The non-adaptive execution loop sequentially advances the solution state by computing the linear algebraic system corresponding to each static temporal increment. It lacks any localized error estimation and does not reallocate degrees of freedom. To mitigate excessive disk I/O operations and ensure an \textit{apples-to-apples} comparison with the adaptive variant, output records (VTU+PVTU) are throttled and written to disk at strict intervals (every $0.05$ seconds).
 
 \begin{minted}[frame=single,fontsize=\small,linenos]{cpp}
 void Heat::run() {
@@ -592,7 +592,7 @@ solution = solution_owned;
 
 To evaluate the efficiency of the proposed space-time adaptive strategy, a comparative analysis is performed against a strictly homogeneous baseline. Both the adaptive and non-adaptive implementations utilize the exact same architectural foundation, sharing the Algebraic Multigrid (AMG) preconditioner and the pre-assembled system matrices strategy to ensure a mathematically rigorous evaluation of the adaptivity.
 
-The problem domain is discretized starting from a base hexahedron partitioned into tetrahedra, scaling the refinement to generate three distinct initial unstructured meshes: \texttt{mesh-cube-10}, \texttt{mesh-cube-20}, and \texttt{mesh-cube-40}. 
+The problem domain is discretized starting from a base hexahedron partitioned into tetrahedra, scaling the refinement to generate three distinct initial unstructured meshes: \texttt{mesh-cube-10}, \texttt{texttt{mesh-cube-20}}, and \texttt{mesh-cube-40}. 
 
 The experimental setup is designed in two phases. The preliminary experiments were conducted locally on a consumer-grade machine utilizing 8 MPI processes. 
 
@@ -627,7 +627,7 @@ This immense performance gain is the direct result of the synergistic action of 
     \item \textbf{Spatial Efficiency ($h$-adaptivity):} Concurrently, the error-guided mesh refinement ensures that the system matrices $\mathbf{M}$ and $\mathbf{A}$ remain exceptionally compact. High density of degrees of freedom is allocated strictly in the immediate vicinity of the spatial impulse $h(x)$ and only when it is active. The rest of the domain remains coarse, solving a heavily downsized algebraic system.
 \end{itemize}
 
-Finally, the results confirm that the computational overhead introduced by the adaptive mechanics (specifically the a posteriori evaluation of the \texttt{KellyErrorEstimator} and the state projection via \texttt{SolutionTransfer}) is entirely negligible when compared to the massive reduction in the number of linear CG iterations and matrix-vector operations. The adaptive framework is therefore not only theoretically sound but computationally highly advantageous for localized transient phenomena.
+Finally, the results confirm that the computational overhead introduced by the adaptive mechanics (specifically the \textit{a posteriori} evaluation of the \texttt{KellyErrorEstimator} and the state projection via \texttt{SolutionTransfer}) is entirely negligible when compared to the massive reduction in the number of linear CG iterations and matrix-vector operations. The adaptive framework is therefore not only theoretically sound but computationally highly advantageous for localized transient phenomena.
 
 \section{7. References}
 
