@@ -309,11 +309,4 @@ void Heat::run() {
     solution_owned_old = solution_owned;
     output();
   }
-
-  // Print summary of internal timers at the end of the run method.
-  pcout << "\n===============================================" << std::endl;
-  pcout << "PERFORMANCE PROFILE (Heat::run)" << std::endl;
-  pcout << "-----------------------------------------------" << std::endl;
-  computing_timer.print_summary();
-  pcout << "===============================================\n" << std::endl;
 }
