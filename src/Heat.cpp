@@ -1,6 +1,31 @@
 #include "Heat.hpp"
 
+
+// Constructor definition
+Heat::Heat(const std::string                              &mesh_file_name_, 
+           const unsigned int                              &r_,
+           const double                                    &T_,
+           const double                                    &theta_,
+           const double                                    &delta_t_,
+           const std::function<double(const Point<dim> &)> &mu_,
+           const std::function<double(const Point<dim> &, const double &)> &f_)
+  : mesh_file_name(mesh_file_name_)
+  , r(r_)
+  , T(T_)
+  , theta(theta_)
+  , delta_t(delta_t_)
+  , mu(mu_)
+  , f(f_)
+  , mpi_size(Utilities::MPI::n_mpi_processes(MPI_COMM_WORLD))
+  , mpi_rank(Utilities::MPI::this_mpi_process(MPI_COMM_WORLD))
+  , mesh(MPI_COMM_WORLD)
+  , pcout(std::cout, mpi_rank == 0)
+  , computing_timer(MPI_COMM_WORLD, pcout.get_stream(), TimerOutput::summary, TimerOutput::wall_times)
+{}
+
+// Reads the meh from file fopr the iniziaitazion of the domain
 void Heat::init_mesh() {
+  TimerOutput::Scope s(computing_timer, "init_mesh");
   pcout << "Initializing the mesh from file" << std::endl;
   Triangulation<dim> mesh_serial;
   GridIn<dim> grid_in;
@@ -18,6 +43,7 @@ void Heat::init_mesh() {
 }
 
 void Heat::setup_system() {
+  TimerOutput::Scope s(computing_timer, "setup_system");
 
   if (!fe) {
     fe = std::make_unique<FE_SimplexP<dim>>(r);
@@ -36,143 +62,148 @@ void Heat::setup_system() {
   DoFTools::make_sparsity_pattern(dof_handler, sparsity);
   sparsity.compress();
 
+
   // Re-inizializzazione di matrice e vettori
-  system_matrix.reinit(sparsity);
+  mass_matrix.reinit(sparsity);
+  stiffness_matrix.reinit(sparsity);
   system_rhs.reinit(locally_owned_dofs, MPI_COMM_WORLD);
   solution_owned.reinit(locally_owned_dofs, MPI_COMM_WORLD);
   solution_owned_old.reinit(locally_owned_dofs, MPI_COMM_WORLD);
   solution.reinit(locally_owned_dofs, locally_relevant_dofs, MPI_COMM_WORLD);
 }
 
-void
-Heat::assemble()
-{
-  // Number of local DoFs for each element.
-  const unsigned int dofs_per_cell = fe->dofs_per_cell;
+// Computes the mass and stifness matrices to be re-used
+void Heat::assemble_matrices() {
+  TimerOutput::Scope s(computing_timer, "assemble_matrices");
+  
+  // Azzera le matrici globali
+  mass_matrix = 0.0;
+  stiffness_matrix = 0.0;
 
-  // Number of quadrature points for each element.
+  const unsigned int dofs_per_cell = fe->dofs_per_cell;
   const unsigned int n_q = quadrature->size();
 
-  FEValues<dim> fe_values(*fe,
-                          *quadrature,
-                          update_values | update_gradients |
-                            update_quadrature_points | update_JxW_values);
+  FEValues<dim> fe_values(*fe, *quadrature,
+                          update_values | update_gradients | update_quadrature_points | update_JxW_values);
 
-  // Local matrix and vector.
-  FullMatrix<double> cell_matrix(dofs_per_cell, dofs_per_cell);
-  Vector<double>     cell_rhs(dofs_per_cell);
-
+  FullMatrix<double> cell_mass(dofs_per_cell, dofs_per_cell);
+  FullMatrix<double> cell_stiffness(dofs_per_cell, dofs_per_cell);
   std::vector<types::global_dof_index> dof_indices(dofs_per_cell);
 
-  // Reset the global matrix and vector, just in case.
-  system_matrix = 0.0;
-  system_rhs    = 0.0;
+  for (const auto &cell : dof_handler.active_cell_iterators()) {
+    if (!cell->is_locally_owned()) continue;
 
-  // Evaluation of the old solution on quadrature nodes of current cell.
-  std::vector<double> solution_old_values(n_q);
+    fe_values.reinit(cell);
+    cell_mass = 0.0;
+    cell_stiffness = 0.0;
 
-  // Evaluation of the gradient of the old solution on quadrature nodes of
-  // current cell.
-  std::vector<Tensor<1, dim>> solution_old_grads(n_q);
+    for (unsigned int q = 0; q < n_q; ++q) {
+      const double mu_loc = mu(fe_values.quadrature_point(q));
 
-  for (const auto &cell : dof_handler.active_cell_iterators())
-    {
-      if (!cell->is_locally_owned())
-        continue;
+      for (unsigned int i = 0; i < dofs_per_cell; ++i) {
+        for (unsigned int j = 0; j < dofs_per_cell; ++j) {
+          // Matrice di Massa M
+          cell_mass(i, j) += fe_values.shape_value(i, q) * fe_values.shape_value(j, q) * fe_values.JxW(q);
 
-      fe_values.reinit(cell);
-
-      cell_matrix = 0.0;
-      cell_rhs    = 0.0;
-
-      // Evaluate the old solution and its gradient on quadrature nodes.
-      fe_values.get_function_values(solution, solution_old_values);
-      fe_values.get_function_gradients(solution, solution_old_grads);
-
-      for (unsigned int q = 0; q < n_q; ++q)
-        {
-          const double mu_loc = mu(fe_values.quadrature_point(q));
-
-          // time è il tempo "vecchio" (t_n), time + delta_t è il tempo "nuovo" (t_{n+1})
-          const double f_old_loc = f(fe_values.quadrature_point(q), time);
-          const double f_new_loc = f(fe_values.quadrature_point(q), time + delta_t);
-
-
-          for (unsigned int i = 0; i < dofs_per_cell; ++i)
-            {
-              for (unsigned int j = 0; j < dofs_per_cell; ++j)
-                {
-                  // Time derivative.
-                  cell_matrix(i, j) += (1.0 / delta_t) *             //
-                                       fe_values.shape_value(i, q) * //
-                                       fe_values.shape_value(j, q) * //
-                                       fe_values.JxW(q);
-
-                  // Diffusion.
-                  cell_matrix(i, j) += theta * mu_loc *                             //
-                    scalar_product(fe_values.shape_grad(i, q),   //
-                                   fe_values.shape_grad(j, q)) * //
-                    fe_values.JxW(q);
-
-                }
-
-              // Time derivative.
-              cell_rhs(i) += (1.0 / delta_t) *             //
-                             fe_values.shape_value(i, q) * //
-                             solution_old_values[q] *      //
-                             fe_values.JxW(q);
-
-                             
-
-              // Diffusion.
-              cell_rhs(i) -= (1.0 - theta) * mu_loc *                   //
-                             scalar_product(fe_values.shape_grad(i, q), //
-                                            solution_old_grads[q]) *    //
-                             fe_values.JxW(q);
-
-              // Forcing term.
-              cell_rhs(i) +=
-                (theta * f_new_loc + (1.0 - theta) * f_old_loc) * //
-                fe_values.shape_value(i, q) *                     //
-                fe_values.JxW(q);
-            }
+          // Matrice di Rigidezza A (Diffusione)
+          cell_stiffness(i, j) += mu_loc * scalar_product(fe_values.shape_grad(i, q), 
+                                                 fe_values.shape_grad(j, q)) * fe_values.JxW(q);
         }
-
-
-        
-      cell->get_dof_indices(dof_indices);
-
-      system_matrix.add(dof_indices, cell_matrix);
-      system_rhs.add(dof_indices, cell_rhs);
+      }
     }
+    
+    cell->get_dof_indices(dof_indices);
+    mass_matrix.add(dof_indices, cell_mass);
+    stiffness_matrix.add(dof_indices, cell_stiffness);
+  }
 
-  system_matrix.compress(VectorOperation::add);
-  system_rhs.compress(VectorOperation::add);
-
- 
+  mass_matrix.compress(VectorOperation::add);
+  stiffness_matrix.compress(VectorOperation::add);
 }
 
-void
-Heat::solve_linear_system()
-{
+// System assembled from the computed matrices and assembling the rhs
+void Heat::assemble_system_and_rhs() {
+  TimerOutput::Scope s(computing_timer, "assemble_system_and_rhs");
+
+  // 1. Costruiamo la matrice di sistema: S = (1/dt) * M + theta * A
+  // Copiamo M in S per efficienza, la scaliamo e aggiungiamo A
+  system_matrix.copy_from(mass_matrix);
+  system_matrix *= (1.0 / delta_t);
+  system_matrix.add(theta, stiffness_matrix);
+
+  // 2. Calcoliamo i contributi della soluzione vecchia al RHS tramite prodotti Matrice-Vettore
+  // RHS = ( (1/dt)*M - (1 - theta)*A ) * u_old
+  system_rhs = 0.0;
+  TrilinosWrappers::MPI::Vector tmp(solution_owned); // Vettore temporaneo con stesso layout
+
+  // + (1/dt) * M * u_old
+  mass_matrix.vmult(tmp, solution_owned_old);
+  system_rhs.add(1.0 / delta_t, tmp);
+
+  // - (1 - theta) * A * u_old
+  stiffness_matrix.vmult(tmp, solution_owned_old);
+  system_rhs.add(-(1.0 - theta), tmp);
+
+  // 3. Calcoliamo la forzante f (richiede un loop sulle celle, ma solo sui valori, non sui gradienti)
+  const unsigned int dofs_per_cell = fe->dofs_per_cell;
+  const unsigned int n_q = quadrature->size();
+  FEValues<dim> fe_values(*fe, *quadrature, update_values | update_quadrature_points | update_JxW_values);
+
+  Vector<double> cell_rhs(dofs_per_cell);
+  std::vector<types::global_dof_index> dof_indices(dofs_per_cell);
+
+  for (const auto &cell : dof_handler.active_cell_iterators()) {
+    if (!cell->is_locally_owned()) continue;
+
+    fe_values.reinit(cell);
+    cell_rhs = 0.0;
+
+    for (unsigned int q = 0; q < n_q; ++q) {
+      const double f_old_loc = f(fe_values.quadrature_point(q), time);
+      const double f_new_loc = f(fe_values.quadrature_point(q), time + delta_t);
+
+      for (unsigned int i = 0; i < dofs_per_cell; ++i) {
+        cell_rhs(i) += (theta * f_new_loc + (1.0 - theta) * f_old_loc) * fe_values.shape_value(i, q) * fe_values.JxW(q);
+      }
+    }
+    cell->get_dof_indices(dof_indices);
+    system_rhs.add(dof_indices, cell_rhs);
+  }
   
-  TrilinosWrappers::PreconditionSSOR preconditioner;
-  preconditioner.initialize(
-    system_matrix, TrilinosWrappers::PreconditionSSOR::AdditionalData(1.0));
+  system_rhs.compress(VectorOperation::add);
+}
+
+// Solving the system with the AMG precoditioner
+void Heat::solve_linear_system()
+{
+  TimerOutput::Scope s(computing_timer, "solve_linear_system");
+  
+  // Usiamo il precondizionatore Algebraic Multigrid (AMG) di Trilinos
+  TrilinosWrappers::PreconditionAMG preconditioner;
+  
+  // Configuriamo i parametri per un problema di tipo parabolico/ellittico
+  TrilinosWrappers::PreconditionAMG::AdditionalData amg_data;
+  amg_data.elliptic = true;
+  amg_data.smoother_sweeps = 2;
+  amg_data.smoother_type = "ML symmetric Gauss-Seidel";
+  
+  preconditioner.initialize(system_matrix, amg_data);
 
   ReductionControl solver_control(/* maxiter = */ 10000,
                                   /* tolerance = */ 1.0e-12,
                                   /* reduce = */ 1.0e-6);
 
+  // Il Conjugate Gradient (CG) è perfetto per matrici simmetriche e definite positive
   SolverCG<TrilinosWrappers::MPI::Vector> solver(solver_control);
 
   solver.solve(system_matrix, solution_owned, system_rhs, preconditioner);
   
-  pcout << solver_control.last_step() << " CG iterations" << std::endl;
+  pcout << "  -> " << solver_control.last_step() << " CG iterations (AMG Preconditioned)" << std::endl;
 }
 
-
+// Function called to dynamically refine the mesh based on the spatial error (Kelly estimator)
 void Heat::refine_mesh() {
+  TimerOutput::Scope s(computing_timer, "refine_mesh");
   pcout << "  Estimating error and refining..." << std::endl;
 
   Vector<float> estimated_error_per_cell(mesh.n_active_cells());
@@ -186,31 +217,32 @@ void Heat::refine_mesh() {
                                                   estimated_error_per_cell, 
                                                   0.3, 0.1);
 
-  SolutionTransfer<dim, TrilinosWrappers::MPI::Vector> sol_trans(dof_handler);
-  sol_trans.prepare_for_coarsening_and_refinement(solution_owned);
+  // 1. Salviamo una copia locale della soluzione attuale (mesh vecchia)
+  TrilinosWrappers::MPI::Vector old_solution = solution_owned;
 
+  // 2. SolutionTransfer "cattura" i valori sulla vecchia mesh
+  SolutionTransfer<dim, TrilinosWrappers::MPI::Vector> sol_trans(dof_handler);
+  sol_trans.prepare_for_coarsening_and_refinement(old_solution);
+
+  // 3. La mesh cambia fisicamente
   mesh.execute_coarsening_and_refinement();
 
-  // FIX CRITICO: Salviamo il vecchio vettore prima che setup_system lo distrugga!
-  TrilinosWrappers::MPI::Vector old_solution_owned = solution_owned;
-
-  // Ricostruzione sistema (questo riempirà solution_owned di zeri)
+  // 4. I gradi di libertà vengono ridistribuiti e solution_owned 
+  //    viene riallocato con le nuove dimensioni (pieno di zeri)
   setup_system(); 
+  assemble_matrices(); // Ricalcoliamo M e A sulla nuova mesh
 
-  TrilinosWrappers::MPI::Vector interpolated_sol;
-  interpolated_sol.reinit(dof_handler.locally_owned_dofs(), MPI_COMM_WORLD);
+  // 5. SolutionTransfer inietta i valori interpolati passando (old_vector, new_vector)
+  sol_trans.interpolate(old_solution, solution_owned);
   
-  // Interpoliamo usando la vecchia soluzione salvata (old_solution_owned)
-  sol_trans.interpolate(old_solution_owned, interpolated_sol);
-  
-  solution_owned = interpolated_sol;
+  // 6. Aggiorniamo la variabile con i ghost per l'output/errore
   solution = solution_owned;
 }
 
-
-void
-Heat::output() const
+// output allega i file in uscita con intervalli di tempo regolari
+void Heat::output() const
 {
+  TimerOutput::Scope s(computing_timer, "output");
   DataOut<dim> data_out;
 
   data_out.add_data_vector(dof_handler, solution, "solution");
@@ -232,24 +264,40 @@ Heat::output() const
                                       MPI_COMM_WORLD);
 }
 
+// Function run where you copute the L2 norm error and compute the new delta_t if needed
 void Heat::run() {
+  TimerOutput::Scope s(computing_timer, "run");
+
   init_mesh();
   setup_system();
+  assemble_matrices();
   VectorTools::interpolate(dof_handler, FunctionU0(), solution_owned);
   solution = solution_owned;
+  solution_owned_old = solution_owned;
+
+  const double output_interval = 0.05; // Scegli tu l'intervallo desiderato
+  double next_output_time = 0.0;       // Forza il salvataggio del dato iniziale a t=0
 
   while (time < T) {
     bool step_accepted = false;
     double error_t = 0.0;
     
     while (!step_accepted) {
-      assemble();
+      assemble_system_and_rhs();
       solve_linear_system();
 
-      // Calcoliamo la differenza tra u_new e u_old (errore temporale stimato)
+      // Calcoliamo u_new - u_old
       TrilinosWrappers::MPI::Vector diff = solution_owned;
       diff.add(-1.0, solution_owned_old);
-      error_t = diff.l2_norm() / std::sqrt(dof_handler.n_dofs()); //L2 norm
+
+      // Trucco FEM: ||e||_{L^2}^2 = e^T * M * e
+      TrilinosWrappers::MPI::Vector M_diff(solution_owned);
+      mass_matrix.vmult(M_diff, diff); // M_diff = M * e
+      
+      // Il prodotto scalare di vettori MPI in deal.II fa già la somma globale su tutti i processi
+      double error_l2_sq = diff * M_diff; 
+      error_t = std::sqrt(error_l2_sq);
+
 
       if (error_t > tol_time_max && delta_t > dt_min) {
         // Errore troppo grande: riduciamo dt e non avanziamo nel tempo
@@ -271,10 +319,27 @@ void Heat::run() {
     // Dopo uno step accettato, gestiamo l'adattività spaziale
     if (timestep_number % 5 == 0) {
       refine_mesh();
+      assemble_matrices();
     }
 
     solution = solution_owned;
     solution_owned_old = solution_owned;
-    output();
+    if (time >= next_output_time || time >= T) {
+      pcout << "  --> Salvataggio output a t = " << time << std::endl;
+      output();
+      
+      // Aggiorniamo il traguardo. Usiamo un while nel caso in cui un 
+      // singolo delta_t sia stato stranamente più grande dell'intervallo di output
+      while (next_output_time <= time && next_output_time < T) {
+        next_output_time += output_interval;
+      }
+    }
   }
+
+  // Print summary of internal timers at the end of the run method.
+  pcout << "\n===============================================" << std::endl;
+  pcout << "PERFORMANCE PROFILE (Heat::run)" << std::endl;
+  pcout << "-----------------------------------------------" << std::endl;
+  computing_timer.print_summary();
+  pcout << "===============================================\n" << std::endl;
 }
