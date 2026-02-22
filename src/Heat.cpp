@@ -1,6 +1,5 @@
 #include "Heat.hpp"
 
-
 // Constructor definition
 Heat::Heat(const std::string                              &mesh_file_name_, 
            const unsigned int                              &r_,
@@ -51,7 +50,6 @@ void Heat::setup_system() {
     dof_handler.reinit(mesh); 
   }
 
-  
   dof_handler.distribute_dofs(*fe);
 
   const IndexSet locally_owned_dofs = dof_handler.locally_owned_dofs();
@@ -61,7 +59,6 @@ void Heat::setup_system() {
   TrilinosWrappers::SparsityPattern sparsity(locally_owned_dofs, MPI_COMM_WORLD);
   DoFTools::make_sparsity_pattern(dof_handler, sparsity);
   sparsity.compress();
-
 
   // Re-inizializzazione di matrice e vettori
   mass_matrix.reinit(sparsity);
@@ -319,11 +316,12 @@ void Heat::run() {
     // Dopo uno step accettato, gestiamo l'adattività spaziale
     if (timestep_number % 5 == 0) {
       refine_mesh();
-      assemble_matrices();
+      // assemble_matrices() rimosso da qui perché refine_mesh() lo chiama già al suo interno
     }
 
     solution = solution_owned;
     solution_owned_old = solution_owned;
+    
     if (time >= next_output_time || time >= T) {
       pcout << "  --> Salvataggio output a t = " << time << std::endl;
       output();
@@ -335,11 +333,4 @@ void Heat::run() {
       }
     }
   }
-
-  // Print summary of internal timers at the end of the run method.
-  pcout << "\n===============================================" << std::endl;
-  pcout << "PERFORMANCE PROFILE (Heat::run)" << std::endl;
-  pcout << "-----------------------------------------------" << std::endl;
-  computing_timer.print_summary();
-  pcout << "===============================================\n" << std::endl;
 }
