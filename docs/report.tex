@@ -43,42 +43,10 @@
 \usepackage[a4paper,margin=2.5cm]{geometry}
 \usepackage{color}
 \usepackage{fancyvrb}
+\usepackage{minted} % Added minted library for code snippets
 \newcommand{\VerbBar}{|}
 \newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
 \DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
-% Add ',fontsize=\small' for more characters per line
-\newenvironment{Shaded}{}{}
-\newcommand{\AlertTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{#1}}}
-\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
-\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.49,0.56,0.16}{#1}}
-\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
-\newcommand{\BuiltInTok}[1]{#1}
-\newcommand{\CharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
-\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textit{#1}}}
-\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
-\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.53,0.00,0.00}{#1}}
-\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{#1}}}
-\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.56,0.13,0.00}{#1}}
-\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
-\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.73,0.13,0.13}{\textit{#1}}}
-\newcommand{\ErrorTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{#1}}}
-\newcommand{\ExtensionTok}[1]{#1}
-\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
-\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.02,0.16,0.49}{#1}}
-\newcommand{\ImportTok}[1]{#1}
-\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
-\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{#1}}}
-\newcommand{\NormalTok}[1]{#1}
-\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.40,0.40,0.40}{#1}}
-\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{#1}}
-\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.74,0.48,0.00}{#1}}
-\newcommand{\RegionMarkerTok}[1]{#1}
-\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
-\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.73,0.40,0.53}{#1}}
-\newcommand{\StringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
-\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.10,0.09,0.49}{#1}}
-\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
-\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
 \setlength{\emergencystretch}{3em} % prevent overfull lines
 \providecommand{\tightlist}{%
   \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
@@ -97,8 +65,6 @@
 \titleformat{\section}{\normalfont\Large\bfseries}{\thesection}{1em}{}
 \usepackage{tikz, pgfplots}
 \pgfplotsset{compat=newest}
-\usepackage{listings}
-\lstset{basicstyle=\ttfamily\small, breaklines=true, frame=single, language=C++, keywordstyle=\color{blue}, commentstyle=\color{green!60!black}}
 \usepackage{hyperref}
 \hypersetup{colorlinks=true, linkcolor=blue, urlcolor=blue}
 
@@ -348,8 +314,7 @@ We discretize the spatial domain $\Omega$ using FEM.
 \begin{enumerate}
 \item \textbf{Finite Element Space:} We introduce a finite-dimensional subspace
 $V_h \subset V$ spanned by a basis of continuous, piecewise polynomial
-functions $\{\phi_j(x)\}_{j=1}^{N_h}$. We employ continuous, piecewise linear triangular finite elements
-($P_1$ elements) \cite{picasso1998}.
+functions $\{\phi_j(x)\}_{j=1}^{N_h}$. Following the theoretical framework, one typically employs continuous, piecewise linear ($P_1$) or higher-order polynomial ($P_r$) finite elements \cite{picasso1998}.
 \item \textbf{Approximate Solution:}
 The solution $u(x,t)$ is approximated by $u_h(x,t)$ in $V_h$: \[
     u_h(x, t) = \sum_{j=1}^{N_h} U_j(t) \phi_j(x)
@@ -430,8 +395,7 @@ the error is typically bounded by: \[
 the exact solution's regularity but independent of $H$ and
 $\Delta t$.
 
-Given the proposed scheme (piecewise linear FEM, i.e., $r=1$, and
-Backward Euler, i.e., $Q(\theta)=1$ for $\theta \neq 1/2$), the
+Given the proposed scheme (FEM of degree $r$, and Backward Euler, i.e., $Q(\theta)=1$ for $\theta \neq 1/2$), the
 theoretical error estimate for the exact solution $u$ and the
 numerical approximation $u_{h\tau}$ would be: \[
 \|u - u_{h\tau}\|_{norm} \le C (H + \Delta t)
@@ -455,7 +419,7 @@ Detailed a posteriori error estimates for the error $e = u - u_{h\tau}$ in the $
   This term estimates the error introduced by the time discretization
   scheme based on the difference between solutions at consecutive time
   steps: \[
-  (\epsilon_{K}^{n})^{2}=\int_{t^{n-1}}^{t^{n}}\|\nabla(u_{h}^{n}-u_{h}^{n-1})\|_{0,K}^{2}dt \quad (\text{Error.3})
+  (\epsilon_{K}^{n})^{2}=\int_{t^{n-1}}^{t^{n}}\\|\nabla(u_{h}^{n}-u_{h}^{n-1})\|_{0,K}^{2}dt \quad (\text{Error.3})
   \] This component measures the effect of large solution changes
   between time levels \cite{picasso1998}.
 \item
@@ -498,7 +462,131 @@ adjusting the time step \cite{picasso1998}.
 
 \section{4. Implementation Details}
 
-% Questa sezione è lasciata intenzionalmente vuota per i futuri dettagli di implementazione del codice.
+The numerical resolution of the formulated parabolic problem is accomplished through a specialized C++ implementation utilizing the deal.II finite element library. The computational strategy is inherently Object-Oriented (OOP), encapsulating the problem definition, discretization parameters, and functional logic within a primary \texttt{Heat} class. This encapsulation facilitates data hiding and modularity. The forcing term $f(x,t)$, given its separable nature $g(t)h(x)$, is structured using customized classes (\texttt{g\_function} and \texttt{h\_function}) that inherit from the deal.II \texttt{Function} base class, allowing for transparent evaluation at arbitrary coordinates and temporal instances.
+
+To achieve high computational performance, the solver integrates distributed memory parallelism via the Message Passing Interface (MPI). The spatial domain is partitioned across multiple processors using \texttt{parallel::fullydistributed::Triangulation}. Furthermore, the implementation relies heavily on the Trilinos framework for distributed linear algebra structures, employing \texttt{TrilinosWrappers::SparseMatrix} and \texttt{TrilinosWrappers::MPI::Vector} to manage the global system across the cluster. Performance profiling is embedded directly into the solver logic utilizing deal.II's \texttt{TimerOutput} module, enabling precise measurement of computational bottlenecks such as matrix assembly and linear system resolution.
+
+\subsection{Architectural Optimizations and Preconditioning}
+
+A critical performance optimization implemented in both the non-adaptive baseline and the fully adaptive solver is the explicit pre-computation of the mass and stiffness matrices. Recognizing that the diffusion coefficient $\mu$ remains constant over time, the system matrices $\mathbf{M}$ and $\mathbf{A}$ are assembled strictly once per spatial configuration. 
+
+Consequently, the generic assembly routine is partitioned into \texttt{assemble\_matrices()} and \texttt{assemble\_system\_and\_rhs()}. At each temporal integration step, the global system matrix $\mathbf{S}$ and the right-hand side vector $\mathbf{R}^n$ are rapidly reconstructed using efficient matrix-vector multiplications rather than full quadrature-based integration:
+
+\begin{minted}[frame=single,fontsize=\small,linenos]{cpp}
+// System Matrix construction: S = (1/dt) * M + theta * A
+system_matrix.copy_from(mass_matrix);
+system_matrix *= (1.0 / delta_t);
+system_matrix.add(theta, stiffness_matrix);
+
+// RHS construction using matrix-vector products for the history terms
+system_rhs = 0.0;
+TrilinosWrappers::MPI::Vector tmp(solution_owned); 
+
+mass_matrix.vmult(tmp, solution_owned_old);
+system_rhs.add(1.0 / delta_t, tmp);
+
+stiffness_matrix.vmult(tmp, solution_owned_old);
+system_rhs.add(-(1.0 - theta), tmp);
+\end{minted}
+
+To further accelerate the temporal loop, the linear system $\mathbf{S} \mathbf{U}^{n+1} = \mathbf{R}^n$ is solved using a Conjugate Gradient (CG) algorithm augmented with an Algebraic Multigrid (AMG) preconditioner provided by Trilinos (\texttt{TrilinosWrappers::PreconditionAMG}). This preconditioner scales optimally for elliptic and parabolic PDE operators, reducing the required CG iterations by orders of magnitude compared to standard local relaxation methods (e.g., SSOR).
+
+\subsection{Non-Adaptive Reference Implementation}
+
+To evaluate the computational efficiency and accuracy gains provided by the adaptive schemes, a strictly homogeneous, non-adaptive baseline is formulated. This reference solver maintains a fixed spatial discretization (initialized from the external mesh file) and a constant temporal integration step ($\Delta t = 0.001$) throughout the simulation domain $T$. Both implementations share the exact same architectural foundation, utilizing identical polynomial degrees ($P_2$ elements), the same Algebraic Multigrid preconditioner, and identical matrix pre-assembly strategies to ensure an isolated, mathematically rigorous evaluation of the adaptivity.
+
+The non-adaptive execution loop sequentially advances the solution state by computing the linear algebraic system corresponding to each static temporal increment. It lacks any localized error estimation and does not reallocate degrees of freedom. To mitigate excessive disk I/O operations and ensure an "apples-to-apples" comparison with the adaptive variant, output records (VTU+PVTU) are throttled and written to disk at strict intervals (every $0.05$ seconds).
+
+\begin{minted}[frame=single,fontsize=\small,linenos]{cpp}
+void Heat::run() {
+  // Initialization and pre-computation of matrices
+  setup();
+  assemble_matrices();
+  // ... initial conditions setup ...
+
+  const double output_interval = 0.05; 
+  double next_output_time = output_interval;
+
+  // Time-stepping loop (Fixed delta_t)
+  while (time < T - 0.5 * delta_t) {
+      time += delta_t;
+      ++timestep_number;
+
+      assemble_system_and_rhs();
+      solve_linear_system();
+
+      solution = solution_owned;
+      solution_owned_old = solution_owned; 
+
+      // Throttled output
+      if (time >= next_output_time || time >= T - 0.5 * delta_t) {
+        output();
+        while (next_output_time <= time && next_output_time < T) {
+          next_output_time += output_interval;
+        }
+      }
+  }
+}
+\end{minted}
+
+\subsection{Temporal Adaptivity (k-adaptivity)}
+
+In contrast to the baseline approach, the adaptive implementation dynamically modulates the integration step size, $\Delta t$. The time integration follows the Backward Euler scheme ($\theta = 1.0$). The core of the temporal adaptivity lies in the heuristic control of the integration step size. While rigorous theoretical frameworks, such as those presented by Picasso \cite{picasso1998}, compute the temporal error parameter $\epsilon^n$ via integrals of gradient differences, the implemented routine approximates this quantity strictly using the $L^2$-norm of the difference between the successive global solution vectors, leveraging the pre-computed mass matrix $\mathbf{M}$ ($\|e\|_{L^2}^2 = e^T \mathbf{M} e$):
+
+\begin{minted}[frame=single,fontsize=\small,linenos]{cpp}
+// Calculate solution variation: e = u_new - u_old
+TrilinosWrappers::MPI::Vector diff = solution_owned;
+diff.add(-1.0, solution_owned_old);
+
+// Compute mathematically exact L2 norm: sqrt(e^T * M * e)
+TrilinosWrappers::MPI::Vector M_diff(solution_owned);
+mass_matrix.vmult(M_diff, diff); 
+double error_l2_sq = diff * M_diff; 
+error_t = std::sqrt(error_l2_sq);
+\end{minted}
+
+This calculated temporal discrepancy is compared against predefined upper (\texttt{tol\_time\_max}) and lower (\texttt{tol\_time\_min}) operational tolerances. Should the error estimate exceed \texttt{tol\_time\_max}, the proposed time step is rejected. The integration step $\Delta t$ is then reduced by half, and the system is reverted to the state of the preceding validated step for recomputation. Conversely, an error estimate falling beneath \texttt{tol\_time\_min} triggers an enlargement of $\Delta t$ by a constant factor of $1.2$, optimizing computational effort during periods characterized by smoother solution behavior.
+
+\subsection{Spatial Adaptivity (h-adaptivity)}
+
+Spatial resolution is dynamically modified at predefined intervals (every 5 temporal integration steps). To guide the localized refinement of the $P_r$ simplex elements, the solver eschews the computationally intensive evaluation of the full analytical residual $\eta_K$ in favor of the \texttt{KellyErrorEstimator} module. This deal.II component acts as an efficient proxy, determining an indicator of spatial error based primarily on the magnitude of the jumps in the normal derivative across inter-element boundaries.
+
+Based on the distribution of these error indicators, the spatial grid undergoes modification according to a fixed-number strategy. A specified fraction of the elements demonstrating the largest estimated error ($30\%$) is flagged for refinement, while a smaller fraction containing the lowest error ($10\%$) is designated for coarsening.
+
+In an adaptive framework, altering the spatial domain geometry inherently invalidates the existing degrees of freedom, the solution vectors, and the pre-computed system matrices. To address this, the solver utilizes the \texttt{SolutionTransfer} class to preserve the physical state. Following the structural modifications, \texttt{setup\_system()} redistributes the DoFs, and \texttt{assemble\_matrices()} is re-invoked to calculate the updated mass and stiffness operators. 
+
+The procedure coordinating the evaluation, refinement, and state transfer is encapsulated within the \texttt{refine\_mesh()} method:
+
+\begin{minted}[frame=single,fontsize=\small,linenos]{cpp}
+// Evaluate the spatial error indicator across active elements.
+Vector<float> estimated_error_per_cell(mesh.n_active_cells());
+KellyErrorEstimator<dim>::estimate(dof_handler,
+                                   QGauss<dim - 1>(r + 1),
+                                   {},
+                                   solution, 
+                                   estimated_error_per_cell);
+
+// Flag elements for refinement or coarsening.
+GridRefinement::refine_and_coarsen_fixed_number(mesh, 
+                                                estimated_error_per_cell, 
+                                                0.3, 0.1);
+
+// Initialize state transfer.
+TrilinosWrappers::MPI::Vector old_solution = solution_owned;
+SolutionTransfer<dim, TrilinosWrappers::MPI::Vector> sol_trans(dof_handler);
+sol_trans.prepare_for_coarsening_and_refinement(old_solution);
+
+// Execute modifications on the underlying Triangulation.
+mesh.execute_coarsening_and_refinement();
+
+// Re-distribute degrees of freedom and reconstruct system matrices.
+setup_system(); 
+assemble_matrices();
+
+// Interpolate the preserved state onto the updated system.
+sol_trans.interpolate(old_solution, solution_owned);
+solution = solution_owned;
+\end{minted}
 
 \section{5. Numerical Experiments}
 
