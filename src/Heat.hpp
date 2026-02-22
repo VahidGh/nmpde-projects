@@ -52,12 +52,10 @@ public:
 
     // Evaluation of the function.
     virtual double
-    value(const Point<dim> &p,
+    value(const Point<dim> &/*p*/,
           const unsigned int /*component*/ = 0) const override
     {
-      return p[0] * (1.0 - p[0]) * //
-             p[1] * (1.0 - p[1]) * //
-             p[2] * (1.0 - p[2]);
+      return 0.0;
     }
   };
 
