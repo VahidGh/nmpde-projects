@@ -43,42 +43,10 @@
 \usepackage[a4paper,margin=2.5cm]{geometry}
 \usepackage{color}
 \usepackage{fancyvrb}
+\usepackage{minted} % Added minted library for code snippets
 \newcommand{\VerbBar}{|}
 \newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
 \DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
-% Add ',fontsize=\small' for more characters per line
-\newenvironment{Shaded}{}{}
-\newcommand{\AlertTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{#1}}}
-\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
-\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.49,0.56,0.16}{#1}}
-\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
-\newcommand{\BuiltInTok}[1]{#1}
-\newcommand{\CharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
-\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textit{#1}}}
-\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
-\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.53,0.00,0.00}{#1}}
-\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{#1}}}
-\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.56,0.13,0.00}{#1}}
-\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
-\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.73,0.13,0.13}{\textit{#1}}}
-\newcommand{\ErrorTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{#1}}}
-\newcommand{\ExtensionTok}[1]{#1}
-\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
-\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.02,0.16,0.49}{#1}}
-\newcommand{\ImportTok}[1]{#1}
-\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
-\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{#1}}}
-\newcommand{\NormalTok}[1]{#1}
-\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.40,0.40,0.40}{#1}}
-\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{#1}}
-\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.74,0.48,0.00}{#1}}
-\newcommand{\RegionMarkerTok}[1]{#1}
-\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
-\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.73,0.40,0.53}{#1}}
-\newcommand{\StringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
-\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.10,0.09,0.49}{#1}}
-\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
-\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
 \setlength{\emergencystretch}{3em} % prevent overfull lines
 \providecommand{\tightlist}{%
   \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
@@ -97,8 +65,6 @@
 \titleformat{\section}{\normalfont\Large\bfseries}{\thesection}{1em}{}
 \usepackage{tikz, pgfplots}
 \pgfplotsset{compat=newest}
-\usepackage{listings}
-\lstset{basicstyle=\ttfamily\small, breaklines=true, frame=single, language=C++, keywordstyle=\color{blue}, commentstyle=\color{green!60!black}}
 \usepackage{hyperref}
 \hypersetup{colorlinks=true, linkcolor=blue, urlcolor=blue}
 
@@ -498,7 +464,83 @@ adjusting the time step \cite{picasso1998}.
 
 \section{4. Implementation Details}
 
-% Questa sezione è lasciata intenzionalmente vuota per i futuri dettagli di implementazione del codice.
+The numerical solver relies on the deal.II framework, exploiting distributed memory parallelism via the Message Passing Interface (MPI) and the Trilinos library for linear algebra operations. The computational approach accommodates accuracy requirements that vary significantly across the space and time domains. Unlike homogeneous solvers characterized by fixed grids and constant step sizes, this implementation requires dynamic reallocation of data structures and algebraic systems to support continuous adaptation.
+
+\subsection{Temporal Adaptivity (k-adaptivity)}
+
+To accurately capture the sequence of impulses localized in space and time, the temporal discretization relies on an adaptive Backward Euler scheme ($\theta = 1.0$). At each integration step, a heuristic time-step control evaluates the $L^2$-norm of the difference between the current approximation ($u^n$) and the preceding approximation ($u^{n-1}$). This difference serves as a practical, computationally inexpensive proxy for the temporal error parameter $\epsilon^n$ established in theoretical frameworks.
+
+The step-size adjustment is governed by predefined upper and lower tolerance thresholds. If the discrepancy exceeds the maximum permissible limit (\texttt{tol\_time\_max}), the candidate step is immediately rejected. The step magnitude $\Delta t$ is halved, and the system matrix and right-hand side are reassembled at the appropriate temporal coordinate. Conversely, if the estimated error is strictly below the minimum threshold (\texttt{tol\_time\_min}), the subsequent time step is enlarged by a factor of 1.2, subject to an upper bound (\texttt{dt\_max}). This prevents wasteful computations during quiescent periods of the domain evolution. 
+
+The rejection and progression logic is expressed in the code as follows:
+
+\begin{minted}[frame=single,fontsize=\small,linenos]{cpp}
+while (!step_accepted) {
+    assemble();
+    solve_linear_system();
+
+    // Compute temporal error estimate via L2 norm of the difference
+    TrilinosWrappers::MPI::Vector diff = solution_owned;
+    diff.add(-1.0, solution_owned_old);
+    error_t = diff.l2_norm() / std::sqrt(dof_handler.n_dofs()); 
+
+    if (error_t > tol_time_max && delta_t > dt_min) {
+        // Reject step and reduce dt
+        delta_t /= 2.0;
+        solution_owned = solution_owned_old;
+    } else {
+        // Accept step and progress time
+        step_accepted = true;
+        time += delta_t;
+        timestep_number++;
+        
+        if (error_t < tol_time_min && delta_t < dt_max)
+            delta_t *= 1.2; 
+    }
+}
+\end{minted}
+
+\subsection{Spatial Adaptivity (h-adaptivity)}
+
+The solver addresses localized spatial variations through dynamic refinement and coarsening of the $P_r$ simplex elements. Instead of rigorously implementing the full analytical spatial residual $\eta_K$, the routine relies on the \texttt{KellyErrorEstimator} module provided by deal.II. This acts as a robust surrogate, evaluating the spatial error strictly through the inter-element jumps of the normal derivative. 
+
+Mesh adaptation is scheduled at constant intervals (every 5 time steps). The error metric is collected cell-wise across the distributed triangulation, and the elements are subsequently flagged. A fixed-number criterion is enforced, dictating that the $30\%$ of cells displaying the highest error are flagged for refinement, while the lowest $10\%$ are designated for coarsening.
+
+In contrast to solvers restricted to homogeneous grids, modifications to the underlying mesh require an explicit projection of the physical state from the prior grid configuration to the updated geometry. This data preservation is managed by the \texttt{SolutionTransfer} structure, which interpolates the existing nodal values onto the updated degrees of freedom before the sparsity patterns and algebraic vectors are fundamentally reconstructed. 
+
+The essential operations governing grid modification and solution transfer are organized within the \texttt{refine\_mesh()} function:
+
+\begin{minted}[frame=single,fontsize=\small,linenos]{cpp}
+Vector<float> estimated_error_per_cell(mesh.n_active_cells());
+KellyErrorEstimator<dim>::estimate(dof_handler,
+                                   QGauss<dim - 1>(r + 1),
+                                   {},
+                                   solution, 
+                                   estimated_error_per_cell);
+
+GridRefinement::refine_and_coarsen_fixed_number(mesh, 
+                                                estimated_error_per_cell, 
+                                                0.3, 0.1);
+
+SolutionTransfer<dim, TrilinosWrappers::MPI::Vector> sol_trans(dof_handler);
+sol_trans.prepare_for_coarsening_and_refinement(solution_owned);
+
+mesh.execute_coarsening_and_refinement();
+
+TrilinosWrappers::MPI::Vector old_solution_owned = solution_owned;
+
+// Rebuild sparsity patterns and allocate new memory
+setup_system(); 
+
+TrilinosWrappers::MPI::Vector interpolated_sol;
+interpolated_sol.reinit(dof_handler.locally_owned_dofs(), MPI_COMM_WORLD);
+
+// Interpolate preserving the physical state
+sol_trans.interpolate(old_solution_owned, interpolated_sol);
+
+solution_owned = interpolated_sol;
+solution = solution_owned;
+\end{minted}
 
 \section{5. Numerical Experiments}
 
