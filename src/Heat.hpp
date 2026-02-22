@@ -3,6 +3,7 @@
 
 #include <deal.II/base/conditional_ostream.h>
 #include <deal.II/base/quadrature_lib.h>
+#include <deal.II/base/timer.h>
 
 #include <deal.II/distributed/fully_distributed_tria.h>
 
@@ -78,11 +79,15 @@ public:
     , mpi_rank(Utilities::MPI::this_mpi_process(MPI_COMM_WORLD))
     , mesh(MPI_COMM_WORLD)
     , pcout(std::cout, mpi_rank == 0)
+    , computing_timer(MPI_COMM_WORLD, pcout.get_stream(), TimerOutput::summary, TimerOutput::wall_times)
   {}
 
   // Run the time-dependent simulation.
   void
   run();
+
+  // Getters for global statistics
+  unsigned int get_timestep_number() const { return timestep_number; }
 
 protected:
   // Initialization.
@@ -160,6 +165,9 @@ protected:
 
   // Output stream for process 0.
   ConditionalOStream pcout;
+
+  // Timer for profiling different parts of the program
+  mutable TimerOutput computing_timer;
 };
 
 #endif

@@ -3,6 +3,7 @@
 void
 Heat::setup()
 {
+  TimerOutput::Scope s(computing_timer, "setup");
   pcout << "===============================================" << std::endl;
 
   // Create the mesh.
@@ -92,6 +93,7 @@ Heat::setup()
 void
 Heat::assemble()
 {
+  TimerOutput::Scope s(computing_timer, "assemble");
   // Number of local DoFs for each element.
   const unsigned int dofs_per_cell = fe->dofs_per_cell;
 
@@ -147,35 +149,35 @@ Heat::assemble()
               for (unsigned int j = 0; j < dofs_per_cell; ++j)
                 {
                   // Time derivative.
-                  cell_matrix(i, j) += (1.0 / delta_t) *             //
+                  cell_matrix(i, j) += (1.0 / delta_t) * //
                                        fe_values.shape_value(i, q) * //
                                        fe_values.shape_value(j, q) * //
                                        fe_values.JxW(q);
 
                   // Diffusion.
                   cell_matrix(i, j) +=
-                    theta * mu_loc *                             //
+                    theta * mu_loc * //
                     scalar_product(fe_values.shape_grad(i, q),   //
                                    fe_values.shape_grad(j, q)) * //
                     fe_values.JxW(q);
                 }
 
               // Time derivative.
-              cell_rhs(i) += (1.0 / delta_t) *             //
+              cell_rhs(i) += (1.0 / delta_t) * //
                              fe_values.shape_value(i, q) * //
-                             solution_old_values[q] *      //
+                             solution_old_values[q] * //
                              fe_values.JxW(q);
 
               // Diffusion.
-              cell_rhs(i) -= (1.0 - theta) * mu_loc *                   //
+              cell_rhs(i) -= (1.0 - theta) * mu_loc * //
                              scalar_product(fe_values.shape_grad(i, q), //
-                                            solution_old_grads[q]) *    //
+                                            solution_old_grads[q]) * //
                              fe_values.JxW(q);
 
               // Forcing term.
               cell_rhs(i) +=
                 (theta * f_new_loc + (1.0 - theta) * f_old_loc) * //
-                fe_values.shape_value(i, q) *                     //
+                fe_values.shape_value(i, q) * //
                 fe_values.JxW(q);
             }
         }
@@ -195,6 +197,7 @@ Heat::assemble()
 void
 Heat::solve_linear_system()
 {
+  TimerOutput::Scope s(computing_timer, "solve_linear_system");
   TrilinosWrappers::PreconditionSSOR preconditioner;
   preconditioner.initialize(
     system_matrix, TrilinosWrappers::PreconditionSSOR::AdditionalData(1.0));
@@ -212,6 +215,7 @@ Heat::solve_linear_system()
 void
 Heat::output() const
 {
+  TimerOutput::Scope s(computing_timer, "output");
   DataOut<dim> data_out;
 
   data_out.add_data_vector(dof_handler, solution, "solution");
@@ -236,6 +240,7 @@ Heat::output() const
 void
 Heat::run()
 {
+  TimerOutput::Scope s(computing_timer, "run");
   // Setup initial conditions.
   {
     setup();
