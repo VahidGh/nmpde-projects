@@ -22,7 +22,7 @@ Heat::Heat(const std::string                              &mesh_file_name_,
   , computing_timer(MPI_COMM_WORLD, pcout, TimerOutput::never, TimerOutput::wall_times)
 {}
 
-// Reads the meh from file fopr the iniziaitazion of the domain
+// Reads the mesh from file for the initialization of the domain
 void Heat::init_mesh() {
   TimerOutput::Scope s(computing_timer, "init_mesh");
   pcout << "Initializing the mesh from file" << std::endl;
@@ -70,11 +70,11 @@ void Heat::setup_system() {
   solution.reinit(locally_owned_dofs, locally_relevant_dofs, MPI_COMM_WORLD);
 }
 
-// Computes the mass and stifness matrices to be re-used
+// Computes the mass and stiffness matrices to be re-used
 void Heat::assemble_matrices() {
   TimerOutput::Scope s(computing_timer, "assemble_matrices");
   
-  // Puts at zero the original matrices
+  // Reset the global matrices
   mass_matrix = 0.0;
   stiffness_matrix = 0.0;
 
@@ -100,10 +100,10 @@ void Heat::assemble_matrices() {
 
       for (unsigned int i = 0; i < dofs_per_cell; ++i) {
         for (unsigned int j = 0; j < dofs_per_cell; ++j) {
-          // Matrice di Massa M
+          // Mass Matrix M
           cell_mass(i, j) += fe_values.shape_value(i, q) * fe_values.shape_value(j, q) * fe_values.JxW(q);
 
-          // Matrice di Rigidezza A (Diffusione)
+          // Stiffness Matrix A (Diffusion)
           cell_stiffness(i, j) += mu_loc * scalar_product(fe_values.shape_grad(i, q), 
                                                  fe_values.shape_grad(j, q)) * fe_values.JxW(q);
         }
@@ -124,15 +124,15 @@ void Heat::assemble_system_and_rhs() {
   TimerOutput::Scope s(computing_timer, "assemble_system_and_rhs");
 
   // 1. Build the system matrix: S = (1/dt) * M + theta * A
-  // Copiamo M in S per efficienza, la scaliamo e aggiungiamo A
+  // We copy M into S for efficiency, scale it, and then add A
   system_matrix.copy_from(mass_matrix);
   system_matrix *= (1.0 / delta_t);
   system_matrix.add(theta, stiffness_matrix);
 
-  // 2. Computes the contribution of the old solution for the RHS, with mvm
+  // 2. Compute the contribution of the old solution to the RHS via matrix-vector multiplication
   // RHS = ( (1/dt)*M - (1 - theta)*A ) * u_old
   system_rhs = 0.0;
-  TrilinosWrappers::MPI::Vector tmp(solution_owned); // Vettore temporaneo con stesso layout
+  TrilinosWrappers::MPI::Vector tmp(solution_owned); // Temporary vector with same layout
 
   // + (1/dt) * M * u_old
   mass_matrix.vmult(tmp, solution_owned_old);
@@ -142,7 +142,7 @@ void Heat::assemble_system_and_rhs() {
   stiffness_matrix.vmult(tmp, solution_owned_old);
   system_rhs.add(-(1.0 - theta), tmp);
 
-  // 3. Compute f
+  // 3. Compute forcing term f (requires loop over cells, but only for values, not gradients)
   const unsigned int dofs_per_cell = fe->dofs_per_cell;
   const unsigned int n_q = quadrature->size();
   FEValues<dim> fe_values(*fe, *quadrature, update_values | update_quadrature_points | update_JxW_values);
@@ -171,15 +171,15 @@ void Heat::assemble_system_and_rhs() {
   system_rhs.compress(VectorOperation::add);
 }
 
-// Solving the system with the AMG precoditioner
+// Solving the system with the AMG preconditioner
 void Heat::solve_linear_system()
 {
   TimerOutput::Scope s(computing_timer, "solve_linear_system");
   
-  // Using the Trilinos AMG preconditioner
+  // Use the Algebraic Multigrid (AMG) preconditioner from Trilinos
   TrilinosWrappers::PreconditionAMG preconditioner;
   
-  // Configuriamo i parametri per un problema di tipo parabolico/ellittico
+  // Set parameters for a parabolic/elliptic problem
   TrilinosWrappers::PreconditionAMG::AdditionalData amg_data;
   amg_data.elliptic = true;
   amg_data.smoother_sweeps = 2;
@@ -191,7 +191,7 @@ void Heat::solve_linear_system()
                                   /* tolerance = */ 1.0e-12,
                                   /* reduce = */ 1.0e-6);
 
-  // CG solver for SPD matrices
+  // Conjugate Gradient (CG) is suitable for symmetric positive definite matrices
   SolverCG<TrilinosWrappers::MPI::Vector> solver(solver_control);
 
   solver.solve(system_matrix, solution_owned, system_rhs, preconditioner);
@@ -207,7 +207,7 @@ void Heat::output() const
 
   data_out.add_data_vector(dof_handler, solution, "solution");
 
-  // Add vector for parallel partition.
+  // Add vector for parallel partition
   std::vector<unsigned int> partition_int(mesh.n_active_cells());
   GridTools::get_subdomain_association(mesh, partition_int);
   const Vector<double> partitioning(partition_int.begin(), partition_int.end());
@@ -235,16 +235,17 @@ void Heat::run() {
   solution = solution_owned;
   solution_owned_old = solution_owned;
 
-  const double output_interval = 0.05;
+  const double output_interval = 0.05; 
   
-  // Outut a t = 0
-  pcout << "  --> Salvataggio output a t = " << time << std::endl;
+  // Initial output at t=0
+  pcout << "  --> Saving output at t = " << time << std::endl;
   output();
   
+  // Initialize the next target exactly at 0.05
   double next_output_time = output_interval;       
 
   // Standard fixed time-stepping loop
-  while (time < T - 0.5 * delta_t) {
+  while (time < T) {
       
       time += delta_t;
       timestep_number++;
@@ -252,19 +253,20 @@ void Heat::run() {
       assemble_system_and_rhs();
       solve_linear_system();
 
-      // Upload the variables
+      // Update variables
       solution = solution_owned;
       solution_owned_old = solution_owned;
       
-      // Controllo del throttling dell'output
-      if (time >= next_output_time || time >= T - 0.5 * delta_t) {
-        pcout << "  --> Salvataggio output a t = " << time << std::endl;
+      // Throttling control: check if the target is reached (using a tiny tolerance 
+      // to handle floating point rounding errors) or if the end is reached.
+      if (time >= next_output_time - 1e-8 || time >= T - 1e-8) {
+        pcout << "  --> Saving output at t = " << time << std::endl;
         output();
         
-        while (next_output_time <= time && next_output_time < T) {
+        while (next_output_time <= time && next_output_time <= T) {
           next_output_time += output_interval;
         }
       }
   }
-computing_timer.print_summary();
+  computing_timer.print_summary();
 }
