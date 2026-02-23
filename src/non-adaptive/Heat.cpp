@@ -266,4 +266,5 @@ void Heat::run() {
         }
       }
   }
+computing_timer.print_summary();
 }
