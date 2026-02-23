@@ -5,6 +5,8 @@
 #include <deal.II/base/mpi.h>
 #include <deal.II/base/multithread_info.h>
 #include <cmath>
+#include <iostream>
+#include <string>
 
 //  du/dt -div(mu * grad(u)) = f
 int
@@ -14,13 +16,42 @@ main(int argc, char *argv[])
 
   Utilities::MPI::MPI_InitFinalize mpi_init(argc, argv);
   
+  // Check if the user provided the mesh name argument
+  if (argc < 2)
+  {
+    if (Utilities::MPI::this_mpi_process(MPI_COMM_WORLD) == 0)
+    {
+      std::cerr << "Error: Missing mesh name argument.\n"
+                << "Usage:   " << argv[0] << " <mesh-name>\n"
+                << "Example: mpirun -np 4 " << argv[0] << " mesh-cube-10\n";
+    }
+    return 1;
+  }
+
+  // Retrieve the mesh name from command line
+  std::string mesh_name = argv[1];
+  
+  // Automatically append ".msh" if the user didn't include it
+  if (mesh_name.find(".msh") == std::string::npos)
+  {
+    mesh_name += ".msh";
+  }
+
+  // Construct the full path looking directly inside the ../mesh/ folder
+  std::string mesh_path = "../mesh/" + mesh_name;
+
+  if (Utilities::MPI::this_mpi_process(MPI_COMM_WORLD) == 0)
+  {
+    std::cout << "Starting simulation using mesh: " << mesh_path << std::endl;
+  }
+
   // Overall timer for the entire program execution
   TimerOutput overall_timer(MPI_COMM_WORLD, std::cout,
                             TimerOutput::summary,
                             TimerOutput::wall_times);
   TimerOutput::Scope overall_scope(overall_timer, "Full Program Run");
 
-  // mu diffiusion coefficient
+  // mu diffusion coefficient
   const auto mu = [](const Point<dim> & /*p*/) { 
     return 1.0; 
   };
@@ -30,19 +61,19 @@ main(int argc, char *argv[])
 
   // f forcing term
   const auto f = [&g_pulsation, &h_spatial](const Point<dim> &p, const double &t) {
-  // setting the current time to g(t)
-  g_pulsation.set_time(t);
-  
-  // g(t) * h(x) 
-  return g_pulsation.value(p) * h_spatial.value(p);
+    // setting the current time to g(t)
+    g_pulsation.set_time(t);
+    
+    // g(t) * h(x) 
+    return g_pulsation.value(p) * h_spatial.value(p);
   };
 
-  // Passing the arameters to the constructor
-  Heat problem(/*mesh_file_name = */ "../mesh/mesh-cube-10.msh",
+  // Passing the parameters to the constructor
+  Heat problem(/*mesh_file_name = */ mesh_path,
                /* degree = */ 2,
                /* T = */ 1.0,
                /* theta = */ 1.0,    
-               /* delta_t = */ 0.001, // Nel non-adattivo questo delta_t rimarrà fisso!
+               /* delta_t = */ 0.001, // In the non-adaptive version, this delta_t will remain fixed!
                mu,
                f);    
 
