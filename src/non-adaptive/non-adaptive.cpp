@@ -15,6 +15,11 @@ main(int argc, char *argv[])
   constexpr unsigned int dim = Heat::dim;
 
   Utilities::MPI::MPI_InitFinalize mpi_init(argc, argv);
+
+  TimerOutput overall_timer(MPI_COMM_WORLD, std::cout,
+                            TimerOutput::summary,
+                             TimerOutput::wall_times);
+  TimerOutput::Scope overall_scope(overall_timer, "Full Program Run");
   
   // Check if the user provided the mesh name argument
   if (argc < 2)
