@@ -188,7 +188,7 @@ protected:
   // System right-hand side.
   TrilinosWrappers::MPI::Vector system_rhs;
   
-  // Vettore per salvare la soluzione al passo precedente (ci serve per il RHS!)
+  // Vector to upload the solution at the previous time step, used in the computation of RHS
   TrilinosWrappers::MPI::Vector solution_owned_old;
 
   // System solution, without ghost elements.
