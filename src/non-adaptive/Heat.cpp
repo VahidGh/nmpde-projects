@@ -55,12 +55,12 @@ void Heat::setup_system() {
   const IndexSet locally_owned_dofs = dof_handler.locally_owned_dofs();
   const IndexSet locally_relevant_dofs = DoFTools::extract_locally_relevant_dofs(dof_handler);
 
-  // Ricostruzione dello sparsity pattern
+  // Re-construction of the sparsity pattern
   TrilinosWrappers::SparsityPattern sparsity(locally_owned_dofs, MPI_COMM_WORLD);
   DoFTools::make_sparsity_pattern(dof_handler, sparsity);
   sparsity.compress();
 
-  // Re-inizializzazione di matrice e vettori
+  // Re-initialization of matrices and vectors
   mass_matrix.reinit(sparsity);
   stiffness_matrix.reinit(sparsity);
   system_matrix.reinit(sparsity);
@@ -74,7 +74,7 @@ void Heat::setup_system() {
 void Heat::assemble_matrices() {
   TimerOutput::Scope s(computing_timer, "assemble_matrices");
   
-  // Azzera le matrici globali
+  // Puts at zero the original matrices
   mass_matrix = 0.0;
   stiffness_matrix = 0.0;
 
@@ -123,13 +123,13 @@ void Heat::assemble_matrices() {
 void Heat::assemble_system_and_rhs() {
   TimerOutput::Scope s(computing_timer, "assemble_system_and_rhs");
 
-  // 1. Costruiamo la matrice di sistema: S = (1/dt) * M + theta * A
+  // 1. Build the system matrix: S = (1/dt) * M + theta * A
   // Copiamo M in S per efficienza, la scaliamo e aggiungiamo A
   system_matrix.copy_from(mass_matrix);
   system_matrix *= (1.0 / delta_t);
   system_matrix.add(theta, stiffness_matrix);
 
-  // 2. Calcoliamo i contributi della soluzione vecchia al RHS tramite prodotti Matrice-Vettore
+  // 2. Computes the contribution of the old solution for the RHS, with mvm
   // RHS = ( (1/dt)*M - (1 - theta)*A ) * u_old
   system_rhs = 0.0;
   TrilinosWrappers::MPI::Vector tmp(solution_owned); // Vettore temporaneo con stesso layout
@@ -142,7 +142,7 @@ void Heat::assemble_system_and_rhs() {
   stiffness_matrix.vmult(tmp, solution_owned_old);
   system_rhs.add(-(1.0 - theta), tmp);
 
-  // 3. Calcoliamo la forzante f (richiede un loop sulle celle, ma solo sui valori, non sui gradienti)
+  // 3. Compute f
   const unsigned int dofs_per_cell = fe->dofs_per_cell;
   const unsigned int n_q = quadrature->size();
   FEValues<dim> fe_values(*fe, *quadrature, update_values | update_quadrature_points | update_JxW_values);
@@ -176,7 +176,7 @@ void Heat::solve_linear_system()
 {
   TimerOutput::Scope s(computing_timer, "solve_linear_system");
   
-  // Usiamo il precondizionatore Algebraic Multigrid (AMG) di Trilinos
+  // Using the Trilinos AMG preconditioner
   TrilinosWrappers::PreconditionAMG preconditioner;
   
   // Configuriamo i parametri per un problema di tipo parabolico/ellittico
@@ -199,7 +199,7 @@ void Heat::solve_linear_system()
   pcout << "  -> " << solver_control.last_step() << " CG iterations (AMG Preconditioned)" << std::endl;
 }
 
-// output allega i file in uscita con intervalli di tempo regolari
+// This function gives the solution at equally spaced time steps
 void Heat::output() const
 {
   TimerOutput::Scope s(computing_timer, "output");
@@ -237,7 +237,7 @@ void Heat::run() {
 
   const double output_interval = 0.05;
   
-  // Output a t=0 iniziale
+  // Outut a t = 0
   pcout << "  --> Salvataggio output a t = " << time << std::endl;
   output();
   
@@ -252,7 +252,7 @@ void Heat::run() {
       assemble_system_and_rhs();
       solve_linear_system();
 
-      // Aggiorniamo le variabili
+      // Upload the variables
       solution = solution_owned;
       solution_owned_old = solution_owned;
       
