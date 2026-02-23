@@ -2,6 +2,17 @@
 
 This repository contains a high-performance, parallel C++ implementation of a space-time adaptive solver for a linear parabolic problem (the heat equation). The solver is built on top of the deal.II finite element library and utilizes MPI for distributed memory parallelism alongside the Trilinos framework for advanced algebraic preconditioning.
 
+## Project Structure
+
+The source code is organized into two main sub-modules to ensure a clear distinction between the adaptive and non-adaptive implementations:
+
+* **`src/space-time-adaptivity/`**: Contains the fully adaptive solver.
+    * `space-time-adaptivity.cpp`: Main driver for the adaptive simulation.
+    * `Heat.cpp` / `Heat.hpp`: Core physics and matrix assembly logic for the adaptive case.
+* **`src/non-adaptive/`**: Contains the baseline solver for benchmarking.
+    * `non-adaptive.cpp`: Main driver for the uniform grid/step simulation.
+    * `Heat.cpp` / `Heat.hpp`: Core physics and matrix assembly logic for the baseline case.
+
 ## Overview
 
 The core objective of this project is to model the evolution of a localized thermal impulse over time and space. Standard numerical methods using uniform grids and fixed time steps are highly inefficient for such transient, localized phenomena, as they waste computational resources in regions where nothing is happening.
@@ -28,6 +39,41 @@ $$\frac{\partial u}{\partial t} - \nabla \cdot (\mu \nabla u) = f \quad \text{in
 With homogeneous Neumann boundary conditions and a zero initial state. The forcing term $f(x,t)$ is designed as a sequence of impulses localized in both space and time: $f(x,t) = g(t)h(x)$.
 
 The temporal domain is integrated using the unconditionally stable Backward Euler scheme ($\theta = 1.0$), while the spatial domain is discretized using $P_2$ continuous finite elements.
+
+## Build and Execution
+
+To compile and run the solvers on a cluster or a local machine with the necessary environment, follow these steps:
+
+### 1. Load Environment Modules
+
+```bash
+module load gcc-glibc dealii trilinos
+```
+
+### 2. Configure and Build
+
+```bash
+mkdir -p build
+cd build
+
+cmake ..
+
+make -j8
+```
+
+*(Note: If the compilation fails with a "Killed" error due to high RAM usage, reduce the number of parallel jobs, e.g., use `make -j2` instead of `make -j8`).*
+
+### 3. Run the Solvers
+
+Replace `(NUMERO)` with the desired number of MPI processes.
+
+```bash
+# To run the non-adaptive baseline
+mpirun -np (NUMERO) ./non-adaptive
+
+# To run the adaptive solver
+mpirun -np (NUMERO) ./space-time-adaptivity
+```
 
 ## Experimental Results
 
