@@ -1,9 +1,5 @@
 #include "Heat.hpp"
 
-#include <cmath>
-#include <iostream>
-#include <string>
-
 //  du/dt -div(mu * grad(u)) = f
 int
 main(int argc, char *argv[])
