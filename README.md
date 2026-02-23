@@ -44,13 +44,20 @@ The temporal domain is integrated using the unconditionally stable Backward Eule
 
 To compile and run the solvers on a cluster or a local machine with the necessary environment, follow these steps:
 
-### 1. Load Environment Modules
+### 1. Download the Meshes
+
+The `mesh/` directory is initially empty. Before running the solver, you must download the required `.msh` files from the following repository:
+[NMPDE Labs - Meshes (Lab 06)](https://github.com/michelebucelli/nmpde-labs-aa-25-26/tree/main/lab-06/mesh)
+
+Place all the downloaded meshes (e.g., `mesh-cube-10.msh`, `mesh-cube-20.msh`) directly into the `mesh/` folder of this project.
+
+### 2. Load Environment Modules
 
 ~~~bash
 module load gcc-glibc dealii trilinos
 ~~~
 
-### 2. Configure and Build
+### 3. Configure and Build
 
 ~~~bash
 mkdir -p build
@@ -61,7 +68,7 @@ cmake ..
 make -j8
 ~~~
 
-### 3. Run the Solvers
+### 4. Run the Solvers
 
 Replace `[NP]` with the desired number of MPI processes. You must also provide the target mesh name as the first command-line argument. The application will automatically construct the path to the `../mesh/` directory and append the `.msh` extension.
 
