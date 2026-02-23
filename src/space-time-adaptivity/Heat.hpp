@@ -93,7 +93,7 @@ public:
     virtual double value(const Point<dim> &p, const unsigned int /*component*/ = 0) const override
     {
       Point<dim> x0_point; 
-      x0_point[0] = 0.5; // x dove viene applicato l'impulso, cambiare per test
+      x0_point[0] = 0.5; // point of application of f
       
       const double sigma_val = 0.1; // 
       // h(x) = exp(-(x-x0)^2 / sigma^2) 
@@ -191,16 +191,16 @@ protected:
   // System matrix.
   TrilinosWrappers::SparseMatrix system_matrix;
 
-  // Matrice M
+  // Matrix M
   TrilinosWrappers::SparseMatrix mass_matrix;  
 
-   // Matrice A    
+   // Matrix A    
   TrilinosWrappers::SparseMatrix stiffness_matrix;
 
   // System right-hand side.
   TrilinosWrappers::MPI::Vector system_rhs;
   
-  // Vettore per salvare la soluzione prima della rifinitura 
+  // Vector to store the solution befor the refinament
   TrilinosWrappers::MPI::Vector solution_owned_old;
 
   // System solution, without ghost elements.
