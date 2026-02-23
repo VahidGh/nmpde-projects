@@ -19,7 +19,7 @@ main(int argc, char *argv[])
                             TimerOutput::wall_times);
   TimerOutput::Scope overall_scope(overall_timer, "Full Program Run");
   
-  // Coefficiente di Diffusione (mu)
+  // mu diffusio coefficient
   const auto mu = [](const Point<dim> & /*p*/) { 
     return 1.0; 
   };
@@ -27,16 +27,16 @@ main(int argc, char *argv[])
   Heat::g_function g_pulsation;
   Heat::h_function h_spatial;
 
-  // Forzante (f)
+  // Forcing term f
   const auto f = [&g_pulsation, &h_spatial](const Point<dim> &p, const double &t) {
-  // Impostiamo il tempo corrente per la funzione g(t)
+  // curretn time for g(t)
   g_pulsation.set_time(t);
   
-  // Il risultato è il prodotto g(t) * h(x) 
+  // g(t) * h(x) 
   return g_pulsation.value(p) * h_spatial.value(p);
   };
 
-  // Istanziazione del problema
+  // Giving the parameters to the constructor
   Heat problem(/*mesh_file_name = */ "../mesh/mesh-cube-10.msh",
                /* degree = */ 2,
                /* T = */ 1.0,
