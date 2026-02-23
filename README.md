@@ -46,32 +46,39 @@ To compile and run the solvers on a cluster or a local machine with the necessar
 
 ### 1. Load Environment Modules
 
-```bash
+~~~bash
 module load gcc-glibc dealii trilinos
-```
+~~~
 
 ### 2. Configure and Build
 
-```bash
+~~~bash
 mkdir -p build
 cd build
 
 cmake ..
 
 make -j8
-```
+~~~
 
 ### 3. Run the Solvers
 
-Replace `[NP]` with the desired number of MPI processes.
+Replace `[NP]` with the desired number of MPI processes. You must also provide the target mesh name as the first command-line argument. The application will automatically construct the path to the `../mesh/` directory and append the `.msh` extension.
 
-```bash
+Available standard meshes: `mesh-cube-5`, `mesh-cube-10`, `mesh-cube-20`, `mesh-cube-40`.
+
+~~~bash
 # To run the non-adaptive baseline
-mpirun -np [NP] ./non-adaptive
+mpirun -np [NP] ./non-adaptive [mesh-name]
 
 # To run the adaptive solver
-mpirun -np [NP] ./space-time-adaptivity
-```
+mpirun -np [NP] ./space-time-adaptivity [mesh-name]
+~~~
+
+**Example:**
+~~~bash
+mpirun -np 4 ./space-time-adaptivity mesh-cube-10
+~~~
 
 ## Experimental Results
 
