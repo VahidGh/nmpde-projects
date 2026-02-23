@@ -63,14 +63,14 @@ make -j8
 
 ### 3. Run the Solvers
 
-Replace `(NUMERO)` with the desired number of MPI processes.
+Replace `[NP]` with the desired number of MPI processes.
 
 ```bash
 # To run the non-adaptive baseline
-mpirun -np (NUMERO) ./non-adaptive
+mpirun -np [NP] ./non-adaptive
 
 # To run the adaptive solver
-mpirun -np (NUMERO) ./space-time-adaptivity
+mpirun -np [NP] ./space-time-adaptivity
 ```
 
 ## Experimental Results
