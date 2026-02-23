@@ -289,7 +289,7 @@ energy methods.
   equation with an $L^2$ initial condition and $L^2$ forcing, it is
   a standard result that a unique weak solution exists in the space
   $W = \{w\in L^2(0,T;H^1(\Omega)) \text{ and } \partial w/\partial t\in L^2(0,T;H^{-1}(\Omega))\}$
-  \cite{picasso1998}. Moreover, the solution $u(\cdot,t)$ belongs to
+  \cite{picasso1998, quarteroni_numerical_models}. Moreover, the solution $u(\cdot,t)$ belongs to
   $\mathcal{C}^0([0,T];L^2(\Omega))$ \cite{picasso1998}.
 
   The stability of the solution is demonstrated through energy
@@ -349,7 +349,7 @@ $\mathbf{U}^n \approx \mathbf{U}(t^n)$.
 
 The \textbf{Theta-method} is a one-step finite difference scheme that
 approximates the time derivative and weights the spatial terms between
-$t^n$ and $t^{n+1}$. The scheme for advancing from $\mathbf{U}^n$ to
+$t^n$ and $t^{n+1}$. For an exhaustive and rigorous treatment of the stability and convergence properties of this family of methods applied to parabolic equations, we refer to Quarteroni \cite{quarteroni_numerical_models}. The scheme for advancing from $\mathbf{U}^n$ to
 $\mathbf{U}^{n+1}$ is: \[
 M \left( \frac{\mathbf{U}^{n+1} - \mathbf{U}^n}{\Delta t} \right) + A \left[ \theta \mathbf{U}^{n+1} + (1-\theta) \mathbf{U}^n \right] = \theta \mathbf{F}^{n+1} + (1-\theta) \mathbf{F}^n \quad (FD.1)
 \] where $\mathbf{F}^{n+1} = \mathbf{F}(t^{n+1})$ and
@@ -489,7 +489,7 @@ stiffness_matrix.vmult(tmp, solution_owned_old);
 system_rhs.add(-(1.0 - theta), tmp);
 \end{minted}
 
-To further accelerate the temporal loop, the linear system $\mathbf{S} \mathbf{U}^{n+1} = \mathbf{R}^n$ is solved using a Conjugate Gradient (CG) algorithm augmented with an Algebraic Multigrid (AMG) preconditioner provided by Trilinos (\texttt{TrilinosWrappers::PreconditionAMG}). This preconditioner scales optimally for elliptic and parabolic PDE operators, reducing the required CG iterations by orders of magnitude compared to standard local relaxation methods (e.g., SSOR).
+To further accelerate the temporal loop, the linear system $\mathbf{S} \mathbf{U}^{n+1} = \mathbf{R}^n$ is solved using a Conjugate Gradient (CG) algorithm augmented with an Algebraic Multigrid (AMG) preconditioner provided by Trilinos (\texttt{TrilinosWrappers::PreconditionAMG}). As discussed extensively in \cite{quarteroni_numerical_models}, this preconditioner scales optimally for elliptic and parabolic PDE operators, reducing the required CG iterations by orders of magnitude compared to standard local relaxation methods (e.g., SSOR).
 
 \subsection{Non-Adaptive Reference Implementation}
 
@@ -627,13 +627,15 @@ This immense performance gain is the direct result of the synergistic action of 
     \item \textbf{Spatial Efficiency ($h$-adaptivity):} Concurrently, the error-guided mesh refinement ensures that the system matrices $\mathbf{M}$ and $\mathbf{A}$ remain exceptionally compact. High density of degrees of freedom is allocated strictly in the immediate vicinity of the spatial impulse $h(x)$ and only when it is active. The rest of the domain remains coarse, solving a heavily downsized algebraic system.
 \end{itemize}
 
-Finally, the results confirm that the computational overhead introduced by the adaptive mechanics (specifically the \textit{a posteriori} evaluation of the \texttt{KellyErrorEstimator} and the state projection via \texttt{SolutionTransfer}) is entirely negligible when compared to the massive reduction in the number of linear CG iterations and matrix-vector operations. The adaptive framework is therefore not only theoretically sound but computationally highly advantageous for localized transient phenomena.
+Finally, the results confirm that the computational overhead introduced by the adaptive mechanics (specifically the \textit{a posteriori} evaluation of the \texttt{KellyErrorEstimator} and the state projection via \texttt{SolutionTransfer}) is entirely negligible when compared to the massive reduction in the number of linear CG iterations and matrix-vector operations. The adaptive framework is therefore not only theoretically sound but also computationally highly advantageous for localized transient phenomena.
 
-\section{7. References}
+\section{7. Bibliography}
 
 \begin{thebibliography}{99}
 \bibitem{picasso1998}
 M. Picasso, ``Adaptive finite elements for a linear parabolic problem,'' \emph{Comput. Methods Appl. Mech. Engrg.}, vol. 167, pp. 223--237, 1998. (Département de Mathématiques, Ecole Polytechnique Fédérale de Lausanne).
+\bibitem{quarteroni_numerical_models}
+A. Quarteroni, \emph{Numerical Models for Differential Problems}, 2nd ed., MS\&A, Springer, 2014.
 \end{thebibliography}
 
 \end{document}
