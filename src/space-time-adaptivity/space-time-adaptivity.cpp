@@ -45,11 +45,6 @@ main(int argc, char *argv[])
     std::cout << "Starting simulation using mesh: " << mesh_path << std::endl;
   }
 
-  TimerOutput overall_timer(MPI_COMM_WORLD, std::cout,
-                             TimerOutput::summary,
-                            TimerOutput::wall_times);
-  TimerOutput::Scope overall_scope(overall_timer, "Full Program Run");
-  
   // Diffusion coefficient mu
   const auto mu = [](const Point<dim> & /*p*/) { 
     return 1.0; 
