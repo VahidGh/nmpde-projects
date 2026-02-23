@@ -30,14 +30,14 @@ main(int argc, char *argv[])
 
   // f forcing term
   const auto f = [&g_pulsation, &h_spatial](const Point<dim> &p, const double &t) {
-  // Impostiamo il tempo corrente per la funzione g(t)
+  // setting the current time to g(t)
   g_pulsation.set_time(t);
   
   // g(t) * h(x) 
   return g_pulsation.value(p) * h_spatial.value(p);
   };
 
-  // Istanziazione del problema
+  // Passing the arameters to the constructor
   Heat problem(/*mesh_file_name = */ "../mesh/mesh-cube-10.msh",
                /* degree = */ 2,
                /* T = */ 1.0,
