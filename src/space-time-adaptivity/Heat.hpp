@@ -7,6 +7,7 @@
 #include <deal.II/base/utilities.h>
 #include <deal.II/base/mpi.h>
 #include <deal.II/base/multithread_info.h> 
+#include <deal.II/base/numbers.h>
 
 #include <deal.II/distributed/fully_distributed_tria.h>
 
