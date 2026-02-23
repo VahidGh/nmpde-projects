@@ -61,8 +61,6 @@ cmake ..
 make -j8
 ```
 
-*(Note: If the compilation fails with a "Killed" error due to high RAM usage, reduce the number of parallel jobs, e.g., use `make -j2` instead of `make -j8`).*
-
 ### 3. Run the Solvers
 
 Replace `(NUMERO)` with the desired number of MPI processes.
