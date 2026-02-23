@@ -55,12 +55,12 @@ void Heat::setup_system() {
   const IndexSet locally_owned_dofs = dof_handler.locally_owned_dofs();
   const IndexSet locally_relevant_dofs = DoFTools::extract_locally_relevant_dofs(dof_handler);
 
-  // Ricostruzione dello sparsity pattern
+  // Re-construction of the sparsity pattern
   TrilinosWrappers::SparsityPattern sparsity(locally_owned_dofs, MPI_COMM_WORLD);
   DoFTools::make_sparsity_pattern(dof_handler, sparsity);
   sparsity.compress();
 
-  // Re-inizializzazione di matrice e vettori
+  // Re-initialization of matrices and vectors
   mass_matrix.reinit(sparsity);
   stiffness_matrix.reinit(sparsity);
   system_rhs.reinit(locally_owned_dofs, MPI_COMM_WORLD);
@@ -73,7 +73,7 @@ void Heat::setup_system() {
 void Heat::assemble_matrices() {
   TimerOutput::Scope s(computing_timer, "assemble_matrices");
   
-  // Azzera le matrici globali
+  // Puts at zero the global matrices
   mass_matrix = 0.0;
   stiffness_matrix = 0.0;
 
@@ -122,13 +122,13 @@ void Heat::assemble_matrices() {
 void Heat::assemble_system_and_rhs() {
   TimerOutput::Scope s(computing_timer, "assemble_system_and_rhs");
 
-  // 1. Costruiamo la matrice di sistema: S = (1/dt) * M + theta * A
+  // 1. Compute the system matrix: S = (1/dt) * M + theta * A
   // Copiamo M in S per efficienza, la scaliamo e aggiungiamo A
   system_matrix.copy_from(mass_matrix);
   system_matrix *= (1.0 / delta_t);
   system_matrix.add(theta, stiffness_matrix);
 
-  // 2. Calcoliamo i contributi della soluzione vecchia al RHS tramite mvm
+  // 2. Compute the contribution of the old solution at the RHS by mvm
   // RHS = ( (1/dt)*M - (1 - theta)*A ) * u_old
   system_rhs = 0.0;
   TrilinosWrappers::MPI::Vector tmp(solution_owned); // Vettore temporaneo con stesso layout
@@ -141,7 +141,7 @@ void Heat::assemble_system_and_rhs() {
   stiffness_matrix.vmult(tmp, solution_owned_old);
   system_rhs.add(-(1.0 - theta), tmp);
 
-  // 3. Calcoliamo la forzante f
+  // 3. Compute f
   const unsigned int dofs_per_cell = fe->dofs_per_cell;
   const unsigned int n_q = quadrature->size();
   FEValues<dim> fe_values(*fe, *quadrature, update_values | update_quadrature_points | update_JxW_values);
@@ -190,7 +190,7 @@ void Heat::solve_linear_system()
                                   /* tolerance = */ 1.0e-12,
                                   /* reduce = */ 1.0e-6);
 
-  // Il Conjugate Gradient (CG) per sistemi simmetrici (b = 0)
+  // Using CG for system with SPD matrix (b = 0)
   SolverCG<TrilinosWrappers::MPI::Vector> solver(solver_control);
 
   solver.solve(system_matrix, solution_owned, system_rhs, preconditioner);
@@ -214,29 +214,29 @@ void Heat::refine_mesh() {
                                                   estimated_error_per_cell, 
                                                   0.3, 0.1);
 
-  // 1. Salviamo una copia locale della soluzione attuale (mesh vecchia)
+  // 1. Saving a copy of the current solution
   TrilinosWrappers::MPI::Vector old_solution = solution_owned;
 
-  // 2. SolutionTransfer "cattura" i valori sulla vecchia mesh
+  // 2. SolutionTransfer catches the vectors on the old mesh
   SolutionTransfer<dim, TrilinosWrappers::MPI::Vector> sol_trans(dof_handler);
   sol_trans.prepare_for_coarsening_and_refinement(old_solution);
 
-  // 3. La mesh cambia fisicamente
+  // 3. change the mesh
   mesh.execute_coarsening_and_refinement();
 
-  // 4. I gradi di libertà vengono ridistribuiti e solution_owned 
+  // 4. DoF re-allocated
   //    viene riallocato con le nuove dimensioni (pieno di zeri)
   setup_system(); 
-  assemble_matrices(); // Ricalcoliamo M e A sulla nuova mesh
+  assemble_matrices(); // Compute A and M in the new mesh
 
-  // 5. SolutionTransfer inietta i valori interpolati passando (old_vector, new_vector)
+  // 5. SolutionTransfer interpolatesthe values
   sol_trans.interpolate(old_solution, solution_owned);
   
-  // 6. Aggiorniamo la variabile con i ghost per l'output/errore
+  // 6. Upload the solution with ghost values
   solution = solution_owned;
 }
 
-// output allega i file in uscita con intervalli di tempo regolari
+// output gives the solution at equally spaced time step
 void Heat::output() const
 {
   TimerOutput::Scope s(computing_timer, "output");
@@ -287,23 +287,23 @@ void Heat::run() {
       TrilinosWrappers::MPI::Vector diff = solution_owned;
       diff.add(-1.0, solution_owned_old);
 
-      // Trucco FEM: ||e||_{L^2}^2 = e^T * M * e
+      // ||e||_{L^2}^2 = e^T * M * e
       TrilinosWrappers::MPI::Vector M_diff(solution_owned);
       mass_matrix.vmult(M_diff, diff); // M_diff = M * e
       
-      // Il prodotto scalare di vettori MPI in deal.II fa già la somma globale su tutti i processi
+      
       double error_l2_sq = diff * M_diff; 
       error_t = std::sqrt(error_l2_sq);
 
 
       if (error_t > tol_time_max && delta_t > dt_min) {
-        // Errore troppo grande: riduciamo dt e non avanziamo nel tempo
+        // Error too big, reduce delta_t and go ahead 
         delta_t /= 2.0;
         pcout << "  Step rejected! New delta_t = " << delta_t << std::endl;
         solution_owned = solution_owned_old;
       } 
       else {
-        // Errore accettabile o dt minimo raggiunto: procediamo
+        // Acceptable error
         step_accepted = true;
         time += delta_t;
         timestep_number++;
@@ -313,7 +313,7 @@ void Heat::run() {
       }
     }
 
-    // Dopo uno step accettato, gestiamo l'adattività spaziale
+    // after a accepted step refine the mesh
     if (timestep_number % 5 == 0) {
       refine_mesh();
     }
@@ -325,8 +325,7 @@ void Heat::run() {
       pcout << "  --> Salvataggio output a t = " << time << std::endl;
       output();
       
-      // Aggiorniamo il traguardo. Usiamo un while nel caso in cui un 
-      // singolo delta_t sia stato stranamente più grande dell'intervallo di output
+      // Ulpoad the solution with a while for safety reason
       while (next_output_time <= time && next_output_time < T) {
         next_output_time += output_interval;
       }
