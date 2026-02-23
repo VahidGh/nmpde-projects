@@ -3,15 +3,27 @@ project(space-time-adaptivity LANGUAGES CXX C)
 
 include(common/cmake-common.cmake)
 
-add_executable(space-time-adaptivity src/space-time-adaptivity.cpp src/Heat.cpp)
+# Space-Time Adaptivity
+add_executable(space-time-adaptivity 
+    src/space-time-adaptivity/space-time-adaptivity.cpp 
+    src/space-time-adaptivity/Heat.cpp
+)
 deal_ii_setup_target(space-time-adaptivity)
 
-deal_ii_setup_target(space-time-adaptivity)
+# Non-Adaptive
+add_executable(non-adaptive 
+    src/non-adaptive/non-adaptive.cpp 
+    src/non-adaptive/Heat.cpp
+)
+deal_ii_setup_target(non-adaptive)
 
 enable_testing()
 
 add_test(NAME space-time-adaptivity
          COMMAND space-time-adaptivity)
+
+add_test(NAME non-adaptive
+         COMMAND non-adaptive)
 
 add_test(NAME model_validation
          COMMAND space-time-adaptivity)
